@@ -542,4 +542,65 @@ export class FileUtils {
       return []
     }
   }
+
+  // Additional utility functions for export and bulk operations
+  static async loadAllTestResults(): Promise<any[]> {
+    await this.ensureDirectories()
+    
+    try {
+      const files = await fs.readdir(this.resultsDir)
+      const resultFiles = files.filter(file => file.endsWith('.json'))
+      
+      const results: any[] = []
+      
+      for (const file of resultFiles) {
+        try {
+          const filePath = path.join(this.resultsDir, file)
+          const fileContent = await fs.readFile(filePath, 'utf-8')
+          const result = JSON.parse(fileContent)
+          results.push(result)
+        } catch (error) {
+          console.warn(`Failed to load result file ${file}:`, error)
+        }
+      }
+      
+      return results.sort((a, b) => 
+        new Date(b.executionDate || b.timestamp || 0).getTime() - 
+        new Date(a.executionDate || a.timestamp || 0).getTime()
+      )
+    } catch (error) {
+      console.error('Error loading all test results:', error)
+      return []
+    }
+  }
+
+  static async loadAllTestCases(): Promise<TestCase[]> {
+    await this.ensureDirectories()
+    
+    try {
+      const files = await fs.readdir(this.testCasesDir)
+      const testCaseFiles = files.filter(file => file.endsWith('.md'))
+      
+      const testCases: TestCase[] = []
+      
+      for (const file of testCaseFiles) {
+        try {
+          const testCaseId = file.replace('.md', '')
+          const testCase = await this.loadTestCase(testCaseId)
+          if (testCase) {
+            testCases.push(testCase)
+          }
+        } catch (error) {
+          console.warn(`Failed to load test case ${file}:`, error)
+        }
+      }
+      
+      return testCases.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+    } catch (error) {
+      console.error('Error loading all test cases:', error)
+      return []
+    }
+  }
 }

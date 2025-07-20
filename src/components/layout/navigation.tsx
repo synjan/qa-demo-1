@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
+import { getUserType } from '@/lib/guest-auth'
 import { 
   TestTube2, 
   FolderOpen, 
@@ -34,10 +35,23 @@ const navigation = [
 
 export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userType, setUserType] = useState<'github' | 'guest' | 'none'>('none')
   const pathname = usePathname()
   const { data: session } = useSession()
 
-  if (pathname === '/auth/signin') {
+  useEffect(() => {
+    setUserType(getUserType())
+  }, [])
+
+  // Redirect guests to test-runner if they try to access main app
+  useEffect(() => {
+    if (userType === 'guest' && !pathname.startsWith('/test-runner')) {
+      window.location.href = '/test-runner'
+    }
+  }, [userType, pathname])
+
+  // Don't show navigation on sign-in page or in test-runner section (has its own nav)
+  if (pathname === '/auth/signin' || pathname.startsWith('/test-runner')) {
     return null
   }
 

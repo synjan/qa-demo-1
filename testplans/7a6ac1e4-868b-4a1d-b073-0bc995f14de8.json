@@ -1,0 +1,16 @@
+{
+  "id": "7a6ac1e4-868b-4a1d-b073-0bc995f14de8",
+  "name": "Sample Test Plan - Bug Fixes (Copy)",
+  "description": "A sample test plan to demonstrate the test runner functionality with existing test cases.",
+  "testCases": [
+    "e8a1f668-5e6a-48e9-b5d1-b70608ebc10f",
+    "4f5c01ef-b041-47f0-a03d-9f67efd69083"
+  ],
+  "status": "active",
+  "createdAt": "2025-07-20T22:34:13.324Z",
+  "updatedAt": "2025-07-20T22:34:13.324Z",
+  "createdBy": "clone-system",
+  "targetDate": "",
+  "clonedFrom": "sample-test-plan-1",
+  "clonedAt": "2025-07-20T22:34:13.324Z"
+}

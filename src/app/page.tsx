@@ -7,30 +7,77 @@ import { Navigation } from '@/components/layout/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock, Heart, Upload, FileText, Download, BarChart, Copy } from 'lucide-react'
 import Link from 'next/link'
+import { FavoriteTestsModal } from '@/components/modals/FavoriteTestsModal'
+import { ImportTestCasesModal } from '@/components/modals/ImportTestCasesModal'
+import { ExportResultsModal } from '@/components/modals/ExportResultsModal'
+import { CloneTestPlanModal } from '@/components/modals/CloneTestPlanModal'
 
 const quickActions = [
+  {
+    title: 'Create Test Case',
+    description: 'Create a new test case from scratch',
+    icon: Plus,
+    href: '/testcases/new',
+    color: 'bg-blue-500',
+    category: 'creation'
+  },
+  {
+    title: 'Run Favorite Tests',
+    description: 'Execute your most frequently used test cases',
+    icon: Heart,
+    action: 'favorites',
+    color: 'bg-red-500',
+    category: 'execution'
+  },
+  {
+    title: 'Import Test Cases',
+    description: 'Import test cases from CSV, JSON, or other formats',
+    icon: Upload,
+    action: 'import',
+    color: 'bg-green-500',
+    category: 'creation'
+  },
+  {
+    title: 'Export Test Results',
+    description: 'Export test results and analytics reports',
+    icon: Download,
+    action: 'export',
+    color: 'bg-purple-500',
+    category: 'analysis'
+  },
+  {
+    title: 'Clone Test Plan',
+    description: 'Duplicate an existing test plan as a starting point',
+    icon: Copy,
+    action: 'clone',
+    color: 'bg-orange-500',
+    category: 'creation'
+  },
   {
     title: 'Generate Test Cases',
     description: 'Create test cases from GitHub issues using AI',
     icon: TestTube2,
     href: '/github',
-    color: 'bg-primary'
+    color: 'bg-primary',
+    category: 'creation'
   },
   {
     title: 'Create Test Plan',
     description: 'Build a new test plan from existing test cases',
     icon: FolderOpen,
     href: '/testplans/new',
-    color: 'bg-emerald-500'
+    color: 'bg-emerald-500',
+    category: 'creation'
   },
   {
     title: 'Browse Issues',
     description: 'View and select GitHub issues for testing',
     icon: GitBranch,
     href: '/github',
-    color: 'bg-purple-500'
+    color: 'bg-purple-600',
+    category: 'integration'
   }
 ]
 
@@ -64,6 +111,12 @@ export default function Dashboard() {
   const [activity, setActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Modal states
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [showCloneModal, setShowCloneModal] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -141,6 +194,25 @@ export default function Dashboard() {
       return `+${recent} this week`
     }
     return 'No recent activity'
+  }
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'favorites':
+        setShowFavoritesModal(true)
+        break
+      case 'import':
+        setShowImportModal(true)
+        break
+      case 'export':
+        setShowExportModal(true)
+        break
+      case 'clone':
+        setShowCloneModal(true)
+        break
+      default:
+        console.log('Unknown action:', action)
+    }
   }
 
   if (status === 'loading') {
@@ -249,27 +321,38 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {quickActions.map((action) => (
                 <Card key={action.title} className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="flex items-center space-x-3">
                       <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                        <action.icon className="h-6 w-6" />
+                        <action.icon className="h-5 w-5" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{action.title}</CardTitle>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base leading-tight">{action.title}</CardTitle>
                       </div>
                     </div>
-                    <CardDescription>{action.description}</CardDescription>
+                    <CardDescription className="text-sm leading-snug">{action.description}</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Link href={action.href}>
-                      <Button className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Get Started
+                  <CardContent className="pt-0">
+                    {action.href ? (
+                      <Link href={action.href}>
+                        <Button className="w-full" size="sm">
+                          <Play className="h-3 w-3 mr-2" />
+                          Start
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        size="sm"
+                        onClick={() => handleQuickAction(action.action!)}
+                      >
+                        <Play className="h-3 w-3 mr-2" />
+                        Open
                       </Button>
-                    </Link>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -359,6 +442,24 @@ export default function Dashboard() {
           </Card>
         </div>
       </main>
+
+      {/* Modals */}
+      <FavoriteTestsModal
+        open={showFavoritesModal}
+        onOpenChange={setShowFavoritesModal}
+      />
+      <ImportTestCasesModal
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
+      />
+      <ExportResultsModal
+        open={showExportModal}
+        onOpenChange={setShowExportModal}
+      />
+      <CloneTestPlanModal
+        open={showCloneModal}
+        onOpenChange={setShowCloneModal}
+      />
     </div>
   )
 }

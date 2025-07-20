@@ -3,12 +3,13 @@ import { FileUtils } from '@/lib/file-utils'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // For test runs, we need to search through all test run files
     const allTestRuns = await FileUtils.getAllTestRuns()
-    const testRun = allTestRuns.find(run => run.id === params.id)
+    const testRun = allTestRuns.find(run => run.id === id)
     
     if (!testRun) {
       return NextResponse.json(

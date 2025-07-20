@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Github } from 'lucide-react'
+import { Github, TestTube2, User } from 'lucide-react'
 
 export default function SignIn() {
   const [pat, setPat] = useState('')
+  const [guestName, setGuestName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [guestLoading, setGuestLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -35,16 +37,95 @@ export default function SignIn() {
     }
   }
 
+  const handleGuestSignIn = async () => {
+    if (!guestName.trim()) return
+    
+    setGuestLoading(true)
+    try {
+      const response = await fetch('/api/auth/guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: guestName.trim(),
+          role: 'guest'
+        })
+      })
+
+      if (response.ok) {
+        const { sessionId } = await response.json()
+        localStorage.setItem('guest_session', sessionId)
+        localStorage.setItem('guest_name', guestName.trim())
+        router.push('/test-runner')
+      } else {
+        throw new Error('Failed to create guest session')
+      }
+    } catch (error) {
+      console.error('Guest sign-in error:', error)
+    } finally {
+      setGuestLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">QA Test Manager</CardTitle>
           <CardDescription>
-            Sign in to access your GitHub repositories and manage test cases
+            Choose your access level based on your role and needs
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Guest Access Section */}
+          <div className="space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-foreground">Test Runner Access</h3>
+              <p className="text-sm text-muted-foreground">For UA testers and expert system users</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="guestName">Your Name</Label>
+              <Input
+                id="guestName"
+                type="text"
+                placeholder="Enter your name for audit trail"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+              />
+            </div>
+            
+            <Button
+              onClick={handleGuestSignIn}
+              disabled={!guestName.trim() || guestLoading}
+              className="w-full"
+              size="lg"
+            >
+              <TestTube2 className="mr-2 h-4 w-4" />
+              {guestLoading ? 'Signing in...' : 'Access Test Runner'}
+            </Button>
+            
+            <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md">
+              <strong>Guest Access includes:</strong>
+              <br />• Run test cases and test plans
+              <br />• Record test results and notes
+              <br />• View test execution history
+              <br />• Browse available test cases
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Developers & Admins
+              </span>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <Button
               onClick={handleGitHubSignIn}
@@ -62,7 +143,7 @@ export default function SignIn() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  Or use personal access token
+                  Or use GitHub PAT
                 </span>
               </div>
             </div>
@@ -77,7 +158,7 @@ export default function SignIn() {
                 onChange={(e) => setPat(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Create a token with 'repo' and 'read:user' scopes
+                Create a token with &apos;repo&apos; and &apos;read:user&apos; scopes for full access
               </p>
             </div>
             

@@ -3,10 +3,11 @@ import { FileUtils } from '@/lib/file-utils'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const testCase = await FileUtils.loadTestCase(params.id)
+    const { id } = await params
+    const testCase = await FileUtils.loadTestCase(id)
     
     if (!testCase) {
       return NextResponse.json(
