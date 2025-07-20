@@ -1,26 +1,131 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Light theme - Clean and bright */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 14% 46%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
+    
+    /* QA-specific colors - Light theme */
+    --test-pass: 142 71% 45%;
+    --test-fail: 0 84% 60%;
+    --test-blocked: 38 92% 50%;
+    --test-skip: 214 20% 69%;
+    --priority-critical: 0 84% 60%;
+    --priority-high: 25 95% 53%;
+    --priority-medium: 48 96% 53%;
+    --priority-low: 142 71% 45%;
+  }
+
+  .dark {
+    /* Dark theme - High contrast and readable */
+    --background: 222 84% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 84% 5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 84% 5%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 84% 5%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+    
+    /* QA-specific colors - Dark theme */
+    --test-pass: 142 71% 45%;
+    --test-fail: 0 84% 60%;
+    --test-blocked: 38 92% 50%;
+    --test-skip: 215 20% 65%;
+    --priority-critical: 0 84% 60%;
+    --priority-high: 25 95% 53%;
+    --priority-medium: 48 96% 53%;
+    --priority-low: 142 71% 45%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Additional custom utility classes for QA colors */
+@layer utilities {
+  .test-pass {
+    color: hsl(var(--test-pass));
+  }
+  .test-fail {
+    color: hsl(var(--test-fail));
+  }
+  .test-blocked {
+    color: hsl(var(--test-blocked));
+  }
+  .test-skip {
+    color: hsl(var(--test-skip));
+  }
+  
+  .bg-test-pass {
+    background-color: hsl(var(--test-pass));
+  }
+  .bg-test-fail {
+    background-color: hsl(var(--test-fail));
+  }
+  .bg-test-blocked {
+    background-color: hsl(var(--test-blocked));
+  }
+  .bg-test-skip {
+    background-color: hsl(var(--test-skip));
+  }
+  
+  .border-test-pass {
+    border-color: hsl(var(--test-pass));
+  }
+  .border-test-fail {
+    border-color: hsl(var(--test-fail));
+  }
+  .border-test-blocked {
+    border-color: hsl(var(--test-blocked));
+  }
+  .border-test-skip {
+    border-color: hsl(var(--test-skip));
+  }
+}
+
+/* Font setup */
+@layer base {
+  :root {
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+  }
 }

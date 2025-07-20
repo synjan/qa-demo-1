@@ -1,103 +1,364 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Navigation } from '@/components/layout/navigation'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock } from 'lucide-react'
+import Link from 'next/link'
+
+const quickActions = [
+  {
+    title: 'Generate Test Cases',
+    description: 'Create test cases from GitHub issues using AI',
+    icon: TestTube2,
+    href: '/github',
+    color: 'bg-primary'
+  },
+  {
+    title: 'Create Test Plan',
+    description: 'Build a new test plan from existing test cases',
+    icon: FolderOpen,
+    href: '/testplans/new',
+    color: 'bg-emerald-500'
+  },
+  {
+    title: 'Browse Issues',
+    description: 'View and select GitHub issues for testing',
+    icon: GitBranch,
+    href: '/github',
+    color: 'bg-purple-500'
+  }
+]
+
+interface DashboardStats {
+  totalTestCases: number
+  totalTestPlans: number
+  totalTestRuns: number
+  passRate: number
+  recentTestRuns: number
+  recentTestCases: number
+  recentTestPlans: number
+  activeTestRuns: number
+}
+
+interface Activity {
+  id: string
+  type: 'test_run' | 'test_case' | 'test_plan'
+  title: string
+  description: string
+  timestamp: string
+  status: string
+  metadata: any
+}
+
+export default function Dashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  // State management
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [activity, setActivity] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === 'loading') return
+    
+    if (!session) {
+      const hasToken = typeof window !== 'undefined' && localStorage.getItem('github_pat')
+      if (!hasToken) {
+        router.push('/auth/signin')
+        return
+      }
+    }
+    
+    // Load dashboard data
+    loadDashboardData()
+  }, [session, status, router])
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const [statsResponse, activityResponse] = await Promise.all([
+        fetch('/api/dashboard/stats'),
+        fetch('/api/dashboard/activity?limit=5')
+      ])
+      
+      if (!statsResponse.ok || !activityResponse.ok) {
+        throw new Error('Failed to load dashboard data')
+      }
+      
+      const [statsData, activityData] = await Promise.all([
+        statsResponse.json(),
+        activityResponse.json()
+      ])
+      
+      setStats(statsData)
+      setActivity(activityData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getActivityIcon = (type: string, status: string) => {
+    switch (type) {
+      case 'test_run':
+        if (status === 'completed') return <CheckCircle className="h-4 w-4 text-green-500" />
+        if (status === 'in_progress') return <Play className="h-4 w-4 text-blue-500" />
+        return <Clock className="h-4 w-4 text-gray-400" />
+      case 'test_case':
+        return <TestTube2 className="h-4 w-4 text-blue-500" />
+      case 'test_plan':
+        return <FolderOpen className="h-4 w-4 text-purple-500" />
+      default:
+        return <Clock className="h-4 w-4 text-gray-400" />
+    }
+  }
+
+  const getActivityTypeLabel = (type: string) => {
+    switch (type) {
+      case 'test_run': return 'Test Run'
+      case 'test_case': return 'Test Case'
+      case 'test_plan': return 'Test Plan'
+      default: return type
+    }
+  }
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString()
+  }
+
+  const getChangeIndicator = (current: number, recent: number) => {
+    if (recent > 0) {
+      return `+${recent} this week`
+    }
+    return 'No recent activity'
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">
+              Welcome to QA Test Manager. Manage your test cases, plans, and GitHub integration.
+            </p>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-muted rounded mb-2 w-20"></div>
+                      <div className="h-8 bg-muted rounded mb-2 w-16"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : stats ? (
+              <>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Cases</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestCases}</p>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        {getChangeIndicator(stats.totalTestCases, stats.recentTestCases)}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Plans</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestPlans}</p>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        {getChangeIndicator(stats.totalTestPlans, stats.recentTestPlans)}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Runs</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestRuns}</p>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        {getChangeIndicator(stats.totalTestRuns, stats.recentTestRuns)}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pass Rate</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.passRate}%</p>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        Based on {stats.totalTestRuns} runs
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <div className="col-span-4 text-center text-gray-500 dark:text-gray-400">
+                Failed to load statistics
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {quickActions.map((action) => (
+                <Card key={action.title} className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${action.color} text-white`}>
+                        <action.icon className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{action.title}</CardTitle>
+                      </div>
+                    </div>
+                    <CardDescription>{action.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Link href={action.href}>
+                      <Button className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Get Started
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                Your latest test cases, plans, and runs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 w-48"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : activity.length > 0 ? (
+                <div className="space-y-4">
+                  {activity.map((item) => (
+                    <div key={item.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <div className="flex-shrink-0 mt-1">
+                        {getActivityIcon(item.type, item.status)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {item.title}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {getActivityTypeLabel(item.type)}
+                          </Badge>
+                          {item.status === 'completed' && item.type === 'test_run' && (
+                            <Badge className="text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800">
+                              {item.metadata.passedCount}/{item.metadata.testCount} passed
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          {item.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span>{formatTimestamp(item.timestamp)}</span>
+                          {item.metadata.stepCount && (
+                            <span>• {item.metadata.stepCount} steps</span>
+                          )}
+                          {item.metadata.testCaseCount && (
+                            <span>• {item.metadata.testCaseCount} test cases</span>
+                          )}
+                          {item.metadata.priority && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.metadata.priority}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="text-center pt-4 border-t dark:border-gray-700">
+                    <Button variant="outline" size="sm" onClick={loadDashboardData}>
+                      <Loader2 className="h-3 w-3 mr-2" />
+                      Refresh Activity
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <TestTube2 className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <p>No recent activity</p>
+                  <p className="text-sm">Start by creating test cases or connecting to GitHub</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }

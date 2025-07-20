@@ -1,0 +1,65 @@
+{
+  "id": "083891eb-4907-4258-9a73-12d454aa5e39",
+  "testPlanId": "sample-test-plan-1",
+  "name": "Sample Test Plan - Bug Fixes - 7/20/2025",
+  "startedAt": "2025-07-20T12:29:18.229Z",
+  "status": "completed",
+  "executedBy": "synjan",
+  "results": [
+    {
+      "testCaseId": "e8a1f668-5e6a-48e9-b5d1-b70608ebc10f",
+      "status": "pass",
+      "executedAt": "2025-07-20T12:29:37.117Z",
+      "steps": [
+        {
+          "stepId": "step-1",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-2",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-3",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-4",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-5",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "testCaseId": "4f5c01ef-b041-47f0-a03d-9f67efd69083",
+      "status": "pass",
+      "executedAt": "2025-07-20T12:29:48.378Z",
+      "steps": [
+        {
+          "stepId": "step-1",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-2",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-3",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-4",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-5",
+          "status": "pass"
+        }
+      ]
+    }
+  ],
+  "completedAt": "2025-07-20T12:29:48.379Z"
+}

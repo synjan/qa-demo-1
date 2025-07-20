@@ -1,0 +1,38 @@
+{
+  "id": "3ede1b8b-2740-47d9-9cf9-23e6882880ed",
+  "testPlanId": "ad-hoc-single-test-case",
+  "name": "Ad-hoc run: Manual Test Case for GitHub Issue: Test Failure: rdgf",
+  "startedAt": "2025-07-20T10:09:41.355Z",
+  "status": "completed",
+  "executedBy": "synjan",
+  "results": [
+    {
+      "testCaseId": "4f5c01ef-b041-47f0-a03d-9f67efd69083",
+      "status": "pass",
+      "executedAt": "2025-07-20T12:28:51.873Z",
+      "steps": [
+        {
+          "stepId": "step-1",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-2",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-3",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-4",
+          "status": "pass"
+        },
+        {
+          "stepId": "step-5",
+          "status": "pass"
+        }
+      ]
+    }
+  ],
+  "completedAt": "2025-07-20T12:28:53.758Z"
+}

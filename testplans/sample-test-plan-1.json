@@ -1,0 +1,13 @@
+{
+  "id": "sample-test-plan-1",
+  "name": "Sample Test Plan - Bug Fixes",
+  "description": "A sample test plan to demonstrate the test runner functionality with existing test cases.",
+  "version": "1.0",
+  "testCases": [
+    "e8a1f668-5e6a-48e9-b5d1-b70608ebc10f",
+    "4f5c01ef-b041-47f0-a03d-9f67efd69083"
+  ],
+  "createdAt": "2025-07-20T10:03:42.3NZ",
+  "updatedAt": "2025-07-20T10:03:42.3NZ",
+  "createdBy": "System Demo"
+}
