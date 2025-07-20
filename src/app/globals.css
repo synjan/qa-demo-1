@@ -33,6 +33,16 @@
     --priority-high: 25 95% 53%;
     --priority-medium: 48 96% 53%;
     --priority-low: 142 71% 45%;
+    
+    /* Additional semantic colors */
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --info: 221 83% 53%;
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 25 95% 53%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
@@ -58,14 +68,24 @@
     --ring: 217 91% 60%;
     
     /* QA-specific colors - Dark theme */
-    --test-pass: 142 71% 45%;
-    --test-fail: 0 84% 60%;
-    --test-blocked: 38 92% 50%;
-    --test-skip: 215 20% 65%;
-    --priority-critical: 0 84% 60%;
-    --priority-high: 25 95% 53%;
-    --priority-medium: 48 96% 53%;
-    --priority-low: 142 71% 45%;
+    --test-pass: 142 71% 50%;
+    --test-fail: 0 84% 65%;
+    --test-blocked: 38 92% 55%;
+    --test-skip: 215 20% 70%;
+    --priority-critical: 0 84% 65%;
+    --priority-high: 25 95% 58%;
+    --priority-medium: 48 96% 58%;
+    --priority-low: 142 71% 50%;
+    
+    /* Additional semantic colors */
+    --success: 142 71% 50%;
+    --warning: 38 92% 55%;
+    --info: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 142 71% 50%;
+    --chart-3: 25 95% 58%;
+    --chart-4: 38 92% 55%;
+    --chart-5: 0 84% 65%;
   }
 }
 
@@ -119,6 +139,54 @@
   }
   .border-test-skip {
     border-color: hsl(var(--test-skip));
+  }
+  
+  /* Priority colors */
+  .text-priority-critical {
+    color: hsl(var(--priority-critical));
+  }
+  .text-priority-high {
+    color: hsl(var(--priority-high));
+  }
+  .text-priority-medium {
+    color: hsl(var(--priority-medium));
+  }
+  .text-priority-low {
+    color: hsl(var(--priority-low));
+  }
+  
+  .bg-priority-critical {
+    background-color: hsl(var(--priority-critical));
+  }
+  .bg-priority-high {
+    background-color: hsl(var(--priority-high));
+  }
+  .bg-priority-medium {
+    background-color: hsl(var(--priority-medium));
+  }
+  .bg-priority-low {
+    background-color: hsl(var(--priority-low));
+  }
+  
+  /* Semantic state colors */
+  .text-success {
+    color: hsl(var(--success));
+  }
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  .text-info {
+    color: hsl(var(--info));
+  }
+  
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  .bg-info {
+    background-color: hsl(var(--info));
   }
 }
 

@@ -168,13 +168,13 @@ export default function TestPlansPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -182,8 +182,8 @@ export default function TestPlansPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Test Plans</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <h1 className="text-3xl font-bold text-foreground">Test Plans</h1>
+                <p className="mt-2 text-muted-foreground">
                   Organize and execute collections of test cases for comprehensive testing.
                 </p>
               </div>
@@ -195,8 +195,8 @@ export default function TestPlansPage() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-4">
-              <p className="text-red-800 dark:text-red-200">{error}</p>
+            <div className="mb-6 bg-destructive/10 border border-destructive/20 rounded-md p-4">
+              <p className="text-destructive">{error}</p>
             </div>
           )}
 
@@ -212,7 +212,7 @@ export default function TestPlansPage() {
               <div className="flex gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search test plans..."
                       value={searchQuery}
@@ -244,9 +244,9 @@ export default function TestPlansPage() {
           ) : filteredTestPlans.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <FolderOpen className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No test plans found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No test plans found</h3>
+                <p className="text-muted-foreground mb-4">
                   {testPlans.length === 0 
                     ? "Create your first test plan to organize test cases for execution."
                     : "No test plans match your current filters."
@@ -277,14 +277,14 @@ export default function TestPlansPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center text-muted-foreground">
                           <FileText className="h-4 w-4 mr-1" />
                           {testPlan.testCases.length} test cases
                         </div>
                         <Badge variant="outline">v{testPlan.version}</Badge>
                       </div>
                       
-                      <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                      <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2" />
                           Updated: {formatDate(testPlan.updatedAt)}
@@ -294,7 +294,7 @@ export default function TestPlansPage() {
                           By: {testPlan.createdBy}
                         </div>
                         {testPlan.repository && (
-                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                          <div className="text-xs text-info">
                             Repository: {testPlan.repository}
                           </div>
                         )}
@@ -347,26 +347,26 @@ export default function TestPlansPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{testPlans.length}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Plans</div>
+                    <div className="text-2xl font-bold text-info">{testPlans.length}</div>
+                    <div className="text-sm text-muted-foreground">Total Plans</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    <div className="text-2xl font-bold text-success">
                       {testPlans.reduce((acc, plan) => acc + plan.testCases.length, 0)}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Test Cases</div>
+                    <div className="text-sm text-muted-foreground">Total Test Cases</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                       {Math.round(testPlans.reduce((acc, plan) => acc + plan.testCases.length, 0) / testPlans.length)}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Avg per Plan</div>
+                    <div className="text-sm text-muted-foreground">Avg per Plan</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                       {new Set(testPlans.map(plan => plan.createdBy)).size}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Contributors</div>
+                    <div className="text-sm text-muted-foreground">Contributors</div>
                   </div>
                 </div>
               </CardContent>

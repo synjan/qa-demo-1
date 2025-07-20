@@ -111,15 +111,15 @@ export default function Dashboard() {
   const getActivityIcon = (type: string, status: string) => {
     switch (type) {
       case 'test_run':
-        if (status === 'completed') return <CheckCircle className="h-4 w-4 text-green-500" />
-        if (status === 'in_progress') return <Play className="h-4 w-4 text-blue-500" />
-        return <Clock className="h-4 w-4 text-gray-400" />
+        if (status === 'completed') return <CheckCircle className="h-4 w-4 text-success" />
+        if (status === 'in_progress') return <Play className="h-4 w-4 text-info" />
+        return <Clock className="h-4 w-4 text-muted-foreground" />
       case 'test_case':
-        return <TestTube2 className="h-4 w-4 text-blue-500" />
+        return <TestTube2 className="h-4 w-4 text-info" />
       case 'test_plan':
         return <FolderOpen className="h-4 w-4 text-purple-500" />
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />
+        return <Clock className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -183,10 +183,10 @@ export default function Dashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Cases</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestCases}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Test Cases</p>
+                        <p className="text-2xl font-bold text-foreground">{stats.totalTestCases}</p>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-muted-foreground">
                         <TrendingUp className="h-4 w-4 mr-1" />
                         {getChangeIndicator(stats.totalTestCases, stats.recentTestCases)}
                       </div>
@@ -198,10 +198,10 @@ export default function Dashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Plans</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestPlans}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Test Plans</p>
+                        <p className="text-2xl font-bold text-foreground">{stats.totalTestPlans}</p>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-muted-foreground">
                         <TrendingUp className="h-4 w-4 mr-1" />
                         {getChangeIndicator(stats.totalTestPlans, stats.recentTestPlans)}
                       </div>
@@ -213,10 +213,10 @@ export default function Dashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Test Runs</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalTestRuns}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Test Runs</p>
+                        <p className="text-2xl font-bold text-foreground">{stats.totalTestRuns}</p>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-muted-foreground">
                         <TrendingUp className="h-4 w-4 mr-1" />
                         {getChangeIndicator(stats.totalTestRuns, stats.recentTestRuns)}
                       </div>
@@ -228,10 +228,10 @@ export default function Dashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pass Rate</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.passRate}%</p>
+                        <p className="text-sm font-medium text-muted-foreground">Pass Rate</p>
+                        <p className="text-2xl font-bold text-foreground">{stats.passRate}%</p>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-muted-foreground">
                         <TrendingUp className="h-4 w-4 mr-1" />
                         Based on {stats.totalTestRuns} runs
                       </div>
@@ -240,7 +240,7 @@ export default function Dashboard() {
                 </Card>
               </>
             ) : (
-              <div className="col-span-4 text-center text-gray-500 dark:text-gray-400">
+              <div className="col-span-4 text-center text-muted-foreground">
                 Failed to load statistics
               </div>
             )}
@@ -290,10 +290,10 @@ export default function Dashboard() {
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="animate-pulse">
                       <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div className="h-10 w-10 bg-muted rounded"></div>
                         <div className="flex-1">
-                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 w-48"></div>
-                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                          <div className="h-4 bg-muted rounded mb-2 w-48"></div>
+                          <div className="h-3 bg-muted rounded w-32"></div>
                         </div>
                       </div>
                     </div>
@@ -302,28 +302,28 @@ export default function Dashboard() {
               ) : activity.length > 0 ? (
                 <div className="space-y-4">
                   {activity.map((item) => (
-                    <div key={item.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <div key={item.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-accent transition-colors">
                       <div className="flex-shrink-0 mt-1">
                         {getActivityIcon(item.type, item.status)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <p className="font-medium text-foreground truncate">
                             {item.title}
                           </p>
                           <Badge variant="outline" className="text-xs">
                             {getActivityTypeLabel(item.type)}
                           </Badge>
                           {item.status === 'completed' && item.type === 'test_run' && (
-                            <Badge className="text-xs bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800">
+                            <Badge className="text-xs bg-success/10 text-success border-success/20">
                               {item.metadata.passedCount}/{item.metadata.testCount} passed
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <p className="text-sm text-muted-foreground mb-1">
                           {item.description}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>{formatTimestamp(item.timestamp)}</span>
                           {item.metadata.stepCount && (
                             <span>• {item.metadata.stepCount} steps</span>
@@ -341,7 +341,7 @@ export default function Dashboard() {
                     </div>
                   ))}
                   
-                  <div className="text-center pt-4 border-t dark:border-gray-700">
+                  <div className="text-center pt-4 border-t border-border">
                     <Button variant="outline" size="sm" onClick={loadDashboardData}>
                       <Loader2 className="h-3 w-3 mr-2" />
                       Refresh Activity
@@ -349,8 +349,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <TestTube2 className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <TestTube2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <p>No recent activity</p>
                   <p className="text-sm">Start by creating test cases or connecting to GitHub</p>
                 </div>

@@ -241,41 +241,41 @@ export default function TestRunnerPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pass': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'fail': return <XCircle className="h-4 w-4 text-red-500" />
-      case 'blocked': return <AlertCircle className="h-4 w-4 text-orange-500" />
-      default: return <Clock className="h-4 w-4 text-gray-400" />
+      case 'pass': return <CheckCircle className="h-4 w-4 text-test-pass" />
+      case 'fail': return <XCircle className="h-4 w-4 text-test-fail" />
+      case 'blocked': return <AlertCircle className="h-4 w-4 text-test-blocked" />
+      default: return <Clock className="h-4 w-4 text-muted-foreground" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pass': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800'
-      case 'fail': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800'
-      case 'blocked': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:border-orange-800'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+      case 'pass': return 'bg-test-pass/10 text-test-pass border-test-pass/20'
+      case 'fail': return 'bg-test-fail/10 text-test-fail border-test-fail/20'
+      case 'blocked': return 'bg-test-blocked/10 text-test-blocked border-test-blocked/20'
+      default: return 'bg-muted text-muted-foreground border-border'
     }
   }
 
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-background">
         <Navigation />
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             <Card>
               <CardContent className="text-center py-12">
-                <XCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Error Loading Test Plan</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+                <XCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+                <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Test Plan</h3>
+                <p className="text-muted-foreground mb-4">{error}</p>
                 <Button onClick={() => router.back()}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Go Back
@@ -290,15 +290,15 @@ export default function TestRunnerPage() {
 
   if (!testPlan) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-background">
         <Navigation />
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             <Card>
               <CardContent className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Test Plan Not Found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">The requested test plan could not be found.</p>
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-medium text-foreground mb-2">Test Plan Not Found</h3>
+                <p className="text-muted-foreground mb-4">The requested test plan could not be found.</p>
                 <Button onClick={() => router.push('/testplans')}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Test Plans
@@ -340,13 +340,13 @@ export default function TestRunnerPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-muted-foreground">
                   {progress.completed} / {progress.total} steps
                 </span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -366,19 +366,19 @@ export default function TestRunnerPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Test Plan:</span>
+                      <span className="text-muted-foreground">Test Plan:</span>
                       <div className="font-medium">{testPlan.name}</div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Version:</span>
+                      <span className="text-muted-foreground">Version:</span>
                       <div className="font-medium">v{testPlan.version}</div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Test Cases:</span>
+                      <span className="text-muted-foreground">Test Cases:</span>
                       <div className="font-medium">{testCases.length}</div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Total Steps:</span>
+                      <span className="text-muted-foreground">Total Steps:</span>
                       <div className="font-medium">{progress.total}</div>
                     </div>
                   </div>
@@ -414,20 +414,20 @@ export default function TestRunnerPage() {
                       {/* Test Case Description */}
                       <div>
                         <h3 className="font-medium mb-2">Description</h3>
-                        <p className="text-gray-600 dark:text-gray-300">{currentTestCase?.description}</p>
+                        <p className="text-muted-foreground">{currentTestCase?.description}</p>
                       </div>
                       
                       {/* Preconditions */}
                       {currentTestCase?.preconditions && (
                         <div>
                           <h3 className="font-medium mb-2">Preconditions</h3>
-                          <p className="text-gray-600 dark:text-gray-300">{currentTestCase.preconditions}</p>
+                          <p className="text-muted-foreground">{currentTestCase.preconditions}</p>
                         </div>
                       )}
                       
                       {/* Current Step */}
                       {currentStep && (
-                        <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/20">
+                        <div className="border rounded-lg p-4 bg-info/5">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="font-medium">Step {currentStepIndex + 1} of {currentTestCase.steps.length}</h3>
                             <Badge variant="outline">Current</Badge>
@@ -436,12 +436,12 @@ export default function TestRunnerPage() {
                           <div className="space-y-3">
                             <div>
                               <span className="font-medium text-sm">Action:</span>
-                              <p className="text-gray-700 dark:text-gray-300 mt-1">{currentStep.action}</p>
+                              <p className="text-foreground mt-1">{currentStep.action}</p>
                             </div>
                             
                             <div>
                               <span className="font-medium text-sm">Expected Result:</span>
-                              <p className="text-gray-700 dark:text-gray-300 mt-1">{currentStep.expectedResult}</p>
+                              <p className="text-foreground mt-1">{currentStep.expectedResult}</p>
                             </div>
                             
                             <div>
@@ -462,14 +462,14 @@ export default function TestRunnerPage() {
                       <div className="flex gap-2">
                         <Button 
                           onClick={() => markStepResult('pass')} 
-                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          className="flex-1 bg-test-pass hover:bg-test-pass/90"
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Pass
                         </Button>
                         <Button 
                           onClick={() => markStepResult('fail')} 
-                          className="flex-1 bg-red-600 hover:bg-red-700"
+                          className="flex-1 bg-test-fail hover:bg-test-fail/90"
                         >
                           <XCircle className="h-4 w-4 mr-2" />
                           Fail
@@ -539,8 +539,8 @@ export default function TestRunnerPage() {
                           key={testCase.id}
                           className={`p-3 rounded-lg border ${
                             index === currentTestCaseIndex 
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
-                              : 'border-gray-200 dark:border-gray-700'
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -549,7 +549,7 @@ export default function TestRunnerPage() {
                             </span>
                             {getStatusIcon(testResults[index]?.status || 'skip')}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs text-muted-foreground">
                             {testCase.steps.length} steps • 
                             {testResults[index]?.steps.filter(s => s.status === 'pass').length || 0} passed • 
                             {testResults[index]?.steps.filter(s => s.status === 'fail').length || 0} failed
@@ -568,15 +568,15 @@ export default function TestRunnerPage() {
                   <CardContent>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-400" />
+                        <User className="h-4 w-4 mr-2 text-muted-foreground" />
                         {session?.user?.name || 'Unknown User'}
                       </div>
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                         {startTime?.toLocaleString()}
                       </div>
                       <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                         {startTime && new Date().getTime() - startTime.getTime() > 0 
                           ? `${Math.floor((new Date().getTime() - startTime.getTime()) / 1000 / 60)} min`
                           : '0 min'

@@ -206,27 +206,27 @@ export default function GitHubBrowser() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">GitHub Issues</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <h1 className="text-3xl font-bold text-foreground">GitHub Issues</h1>
+            <p className="mt-2 text-muted-foreground">
               Browse your GitHub repositories and generate test cases from issues using AI.
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-red-800">{error}</p>
+            <div className="mb-6 bg-destructive/10 border border-destructive/20 rounded-md p-4">
+              <p className="text-destructive">{error}</p>
             </div>
           )}
 
@@ -256,17 +256,17 @@ export default function GitHubBrowser() {
                           key={repo.id}
                           className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                             selectedRepo?.id === repo.id
-                              ? 'bg-blue-50 border-blue-300 shadow-md dark:bg-blue-950 dark:border-blue-600'
-                              : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-750'
+                              ? 'bg-primary/5 border-primary shadow-md'
+                              : 'bg-card border-border hover:bg-accent hover:border-accent-foreground hover:shadow-sm'
                           }`}
                           onClick={() => handleRepositorySelect(repo)}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                              <div className="font-semibold text-sm text-foreground truncate">
                                 {repo.name}
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <div className="text-xs text-muted-foreground mt-1">
                                 {repo.owner.login}
                               </div>
                             </div>
@@ -277,7 +277,7 @@ export default function GitHubBrowser() {
                             )}
                           </div>
                           {repo.description && (
-                            <div className="text-sm text-gray-600 dark:text-gray-300 mt-3 line-clamp-2">
+                            <div className="text-sm text-muted-foreground mt-3 line-clamp-2">
                               {repo.description}
                             </div>
                           )}
@@ -330,7 +330,7 @@ export default function GitHubBrowser() {
                       <div className="flex gap-4">
                         <div className="flex-1">
                           <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                               placeholder="Search issues..."
                               value={searchQuery}
@@ -360,7 +360,7 @@ export default function GitHubBrowser() {
                           >
                             {selectedIssues.size === filteredIssues.length ? 'Deselect All' : 'Select All'}
                           </Button>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-muted-foreground">
                             {selectedIssues.size} of {filteredIssues.length} selected
                           </span>
                         </div>
@@ -370,8 +370,8 @@ export default function GitHubBrowser() {
                 </CardHeader>
                 <CardContent>
                   {!selectedRepo ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <GitBranch className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <GitBranch className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                       <p>Select a repository to view its issues</p>
                     </div>
                   ) : loadingIssues ? (
@@ -380,7 +380,7 @@ export default function GitHubBrowser() {
                       <span className="ml-2">Loading issues...</span>
                     </div>
                   ) : filteredIssues.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <p>No issues found matching your criteria</p>
                     </div>
                   ) : (
@@ -388,7 +388,7 @@ export default function GitHubBrowser() {
                       {filteredIssues.map(issue => (
                         <div
                           key={issue.id}
-                          className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                          className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent"
                         >
                           <Checkbox
                             checked={selectedIssues.has(issue.number)}
@@ -399,7 +399,7 @@ export default function GitHubBrowser() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-sm text-gray-900 truncate">
+                              <h3 className="font-medium text-sm text-foreground truncate">
                                 #{issue.number} {issue.title}
                               </h3>
                               <Badge 
@@ -410,7 +410,7 @@ export default function GitHubBrowser() {
                               </Badge>
                             </div>
                             {issue.body && (
-                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                 {issue.body.substring(0, 150)}...
                               </p>
                             )}

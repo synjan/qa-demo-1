@@ -96,11 +96,11 @@ export default function TestCasesPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200'
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'low': return 'bg-green-100 text-green-800 border-green-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'critical': return 'bg-priority-critical/10 text-priority-critical border-priority-critical/20'
+      case 'high': return 'bg-priority-high/10 text-priority-high border-priority-high/20'
+      case 'medium': return 'bg-priority-medium/10 text-priority-medium border-priority-medium/20'
+      case 'low': return 'bg-priority-low/10 text-priority-low border-priority-low/20'
+      default: return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -160,13 +160,13 @@ export default function TestCasesPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -174,8 +174,8 @@ export default function TestCasesPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Test Cases</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <h1 className="text-3xl font-bold text-foreground">Test Cases</h1>
+                <p className="mt-2 text-muted-foreground">
                   Manage your test cases library and organize testing workflows.
                 </p>
               </div>
@@ -200,8 +200,8 @@ export default function TestCasesPage() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-red-800">{error}</p>
+            <div className="mb-6 bg-destructive/10 border border-destructive/20 rounded-md p-4">
+              <p className="text-destructive">{error}</p>
             </div>
           )}
 
@@ -251,7 +251,7 @@ export default function TestCasesPage() {
               <div className="flex gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search test cases..."
                       value={searchQuery}
@@ -296,9 +296,9 @@ export default function TestCasesPage() {
           ) : filteredTestCases.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <TestTube2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No test cases found</h3>
-                <p className="text-gray-600 mb-4">
+                <TestTube2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No test cases found</h3>
+                <p className="text-muted-foreground mb-4">
                   {testCases.length === 0 
                     ? "Get started by generating test cases from your GitHub issues."
                     : "No test cases match your current filters."
@@ -357,7 +357,7 @@ export default function TestCasesPage() {
                         <Badge className={getPriorityColor(testCase.priority)}>
                           {testCase.priority}
                         </Badge>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           {testCase.steps.length} steps
                         </span>
                       </div>
@@ -377,7 +377,7 @@ export default function TestCasesPage() {
                         </div>
                       )}
                       
-                      <div className="text-sm text-gray-500 space-y-1">
+                      <div className="text-sm text-muted-foreground space-y-1">
                         <div>Created: {formatDate(testCase.createdAt)}</div>
                         <div>By: {testCase.createdBy}</div>
                         {testCase.githubIssue && (
@@ -428,26 +428,26 @@ export default function TestCasesPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">{testCases.length}</div>
-                    <div className="text-sm text-gray-600">Total Test Cases</div>
+                    <div className="text-2xl font-bold text-info">{testCases.length}</div>
+                    <div className="text-sm text-muted-foreground">Total Test Cases</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-red-600">
+                    <div className="text-2xl font-bold text-priority-critical">
                       {testCases.filter(tc => tc.priority === 'critical' || tc.priority === 'high').length}
                     </div>
-                    <div className="text-sm text-gray-600">High Priority</div>
+                    <div className="text-sm text-muted-foreground">High Priority</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-2xl font-bold text-success">
                       {testCases.filter(tc => tc.githubIssue).length}
                     </div>
-                    <div className="text-sm text-gray-600">From GitHub</div>
+                    <div className="text-sm text-muted-foreground">From GitHub</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-purple-600">
+                    <div className="text-2xl font-bold text-purple-500">
                       {getAllTags().length}
                     </div>
-                    <div className="text-sm text-gray-600">Unique Tags</div>
+                    <div className="text-sm text-muted-foreground">Unique Tags</div>
                   </div>
                 </div>
               </CardContent>
