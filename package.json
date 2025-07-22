@@ -1,6 +1,7 @@
 {
   "name": "qa-demo-1",
   "version": "0.1.0",
+  "description": "A comprehensive manual test case management platform with GitHub integration",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
