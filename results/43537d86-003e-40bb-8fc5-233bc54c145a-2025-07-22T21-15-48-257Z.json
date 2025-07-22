@@ -1,0 +1,22 @@
+{
+  "id": "43537d86-003e-40bb-8fc5-233bc54c145a",
+  "testPlanId": "ad-hoc-single-test-case",
+  "name": "Ad-hoc run: Test Empty Repo Picker",
+  "startedAt": "2025-07-22T21:15:46.843Z",
+  "status": "completed",
+  "executedBy": "synjan",
+  "results": [
+    {
+      "testCaseId": "21e04fc3-08d2-4ad9-9db8-61f96dec832d",
+      "status": "fail",
+      "executedAt": "",
+      "steps": [
+        {
+          "stepId": "step-1",
+          "status": "fail"
+        }
+      ]
+    }
+  ],
+  "completedAt": "2025-07-22T21:15:48.059Z"
+}

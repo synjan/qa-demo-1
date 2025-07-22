@@ -150,7 +150,7 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
     const templateId = options?.templateId || 'default'
     const language = options?.language || 'en'
     const temperature = options?.temperature || 0.7
-    const maxTokens = options?.maxTokens || 3000
+    let maxTokens = options?.maxTokens || 3000
     const testCount = options?.testCount || 5
 
     // Retry logic with increasingly strict prompts
@@ -189,7 +189,8 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
         
         const userPrompt = `${template.userPromptPrefix[language]}\n\n"${text}"\n\nGenerate ${testCount} test cases that focus on: ${template.focusAreas.join(', ')}.\n\n${jsonReminder}\n\nRESPOND ONLY IN JSON FORMAT - START WITH [ AND END WITH ]${strictness}`
 
-        const completion = await this.openai.chat.completions.create({
+        // Log API parameters for debugging
+        const apiParams = {
           model: 'gpt-4',
           messages: [
             {
@@ -203,16 +204,45 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
           ],
           temperature: Math.max(0.1, Math.min(temperature, 0.3) - (attempt * 0.1)), // Lower temperature each retry
           max_tokens: maxTokens,
-          stop: ['```', 'Test Case', 'Note:', '**'], // Stop sequences that indicate non-JSON format (max 4 allowed)
+          // Removed stop sequences that might cause early termination
+        }
+        
+        console.log(`[OpenAI API] Attempt ${attempt + 1} - Request params:`, {
+          model: apiParams.model,
+          temperature: apiParams.temperature,
+          max_tokens: apiParams.max_tokens,
+          userPromptLength: userPrompt.length,
+          systemPromptLength: systemPrompt.length
         })
+        
+        const completion = await this.openai.chat.completions.create(apiParams)
 
         const response = completion.choices[0]?.message?.content
+        const usage = completion.usage
+        
+        console.log(`[OpenAI API] Response metadata:`, {
+          finishReason: completion.choices[0]?.finish_reason,
+          totalTokens: usage?.total_tokens,
+          promptTokens: usage?.prompt_tokens,
+          completionTokens: usage?.completion_tokens
+        })
+        
         if (!response) {
           throw new Error('No response from OpenAI')
         }
 
         console.log(`Attempt ${attempt + 1} - Raw OpenAI response:`, response)
         console.log('Response length:', response.length)
+        
+        // Check for suspiciously short responses
+        if (response.length < 100) {
+          console.error(`Response too short (${response.length} chars). This might indicate truncation.`)
+          if (attempt < maxRetries - 1) {
+            lastError = new Error(`Response truncated at ${response.length} characters`)
+            console.log(`Retrying due to short response (attempt ${attempt + 2}/${maxRetries})`)
+            continue
+          }
+        }
 
         // Extract JSON from the response (handle markdown code blocks)
         const cleanedResponse = this.extractJsonFromResponse(response)

@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
+import { EnhancedSlider } from '@/components/ui/enhanced-slider'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BilingualService, Language } from '@/lib/language-service'
 import { PromptTemplateService } from '@/lib/prompt-templates'
+import { SettingsSync } from '@/lib/settings-sync'
 
 interface AIGeneratorSettings {
   interfaceLanguage: Language
@@ -78,16 +79,14 @@ export default function AIGeneratorSettings() {
   const loadSettings = useCallback((service?: BilingualService, initialLang?: Language) => {
     if (typeof window !== 'undefined') {
       try {
-        const savedSettings = localStorage.getItem('ai_generator_settings')
-        if (savedSettings) {
-          const parsed = JSON.parse(savedSettings)
-          setSettings({ ...defaultSettings, ...parsed })
-          
-          // Update language service if available and interface language changed
-          if (service && parsed.interfaceLanguage && parsed.interfaceLanguage !== (initialLang || currentLang)) {
-            service.setLanguage(parsed.interfaceLanguage)
-            setCurrentLang(parsed.interfaceLanguage)
-          }
+        // Use the new sync utility to load settings
+        const syncedSettings = SettingsSync.getAIGeneratorSettings()
+        setSettings(syncedSettings)
+        
+        // Update language service if available and interface language changed
+        if (service && syncedSettings.interfaceLanguage && syncedSettings.interfaceLanguage !== (initialLang || currentLang)) {
+          service.setLanguage(syncedSettings.interfaceLanguage)
+          setCurrentLang(syncedSettings.interfaceLanguage)
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
@@ -120,7 +119,8 @@ export default function AIGeneratorSettings() {
     setSaveStatus('saving')
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('ai_generator_settings', JSON.stringify(settings))
+        // Use the new sync utility to save settings
+        SettingsSync.saveAIGeneratorSettings(settings)
         
         // Update language service if available
         if (languageService) {
@@ -328,6 +328,12 @@ export default function AIGeneratorSettings() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" asChild>
+            <Link href="/settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {currentLang === 'en' ? 'General Settings' : 'Generelle Innstillinger'}
+            </Link>
+          </Button>
           <Button variant="outline" onClick={resetSettings}>
             <RotateCcw className="h-4 w-4 mr-2" />
             {t('reset')}
@@ -457,22 +463,28 @@ export default function AIGeneratorSettings() {
               <Separator />
 
               {/* Temperature */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex justify-between">
                   <Label>{t('temperature')}</Label>
                   <span className="text-sm text-muted-foreground">{settings.temperature}</span>
                 </div>
-                <Slider
-                  value={[settings.temperature]}
-                  onValueChange={([value]) => updateSetting('temperature', value)}
-                  min={0.1}
-                  max={1.0}
-                  step={0.1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{currentLang === 'en' ? 'Consistent' : 'Konsistent'}</span>
-                  <span>{currentLang === 'en' ? 'Creative' : 'Kreativ'}</span>
+                <div className="space-y-3">
+                  <EnhancedSlider
+                    value={[settings.temperature]}
+                    onValueChange={([value]) => updateSetting('temperature', value)}
+                    min={0.1}
+                    max={1.0}
+                    step={0.1}
+                    className="w-full"
+                    showTicks={true}
+                    tickCount={10}
+                    trackHeight="md"
+                    thumbSize="md"
+                  />
+                  <div className="flex justify-between text-sm font-medium text-muted-foreground px-1">
+                    <span>{currentLang === 'en' ? 'Consistent' : 'Konsistent'}</span>
+                    <span>{currentLang === 'en' ? 'Creative' : 'Kreativ'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -846,22 +858,34 @@ export default function AIGeneratorSettings() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Max Tokens */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label>
                   {currentLang === 'en' ? 'Max Tokens' : 'Maks Tokens'}
                   <span className="text-sm text-muted-foreground ml-2">({settings.maxTokens})</span>
                 </Label>
-                <Slider
-                  value={[settings.maxTokens]}
-                  onValueChange={([value]) => updateSetting('maxTokens', value)}
-                  min={1000}
-                  max={4000}
-                  step={250}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1000</span>
-                  <span>4000</span>
+                <div className="space-y-3">
+                  <EnhancedSlider
+                    value={[settings.maxTokens]}
+                    onValueChange={([value]) => updateSetting('maxTokens', value)}
+                    min={1000}
+                    max={4000}
+                    step={250}
+                    className="w-full"
+                    showTicks={true}
+                    tickCount={7}
+                    trackHeight="md"
+                    thumbSize="md"
+                  />
+                  <div className="flex justify-between text-sm font-medium text-muted-foreground px-1">
+                    <span>1000 (Focused)</span>
+                    <span>4000 (Comprehensive)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border">
+                    {currentLang === 'en' 
+                      ? 'Higher values allow for more detailed test cases but cost more tokens'
+                      : 'Høyere verdier tillater mer detaljerte testtilfeller, men koster flere tokens'
+                    }
+                  </p>
                 </div>
               </div>
 
@@ -951,29 +975,35 @@ export default function AIGeneratorSettings() {
               <Separator />
 
               {/* Request Timeout */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label>
                   {currentLang === 'en' ? 'Request Timeout' : 'Forespørsel Timeout'}
                   <span className="text-sm text-muted-foreground ml-2">({settings.requestTimeout}s)</span>
                 </Label>
-                <Slider
-                  value={[settings.requestTimeout]}
-                  onValueChange={([value]) => updateSetting('requestTimeout', value)}
-                  min={30}
-                  max={300}
-                  step={30}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>30s</span>
-                  <span>300s</span>
+                <div className="space-y-3">
+                  <EnhancedSlider
+                    value={[settings.requestTimeout]}
+                    onValueChange={([value]) => updateSetting('requestTimeout', value)}
+                    min={30}
+                    max={300}
+                    step={30}
+                    className="w-full"
+                    showTicks={true}
+                    tickCount={10}
+                    trackHeight="md"
+                    thumbSize="md"
+                  />
+                  <div className="flex justify-between text-sm font-medium text-muted-foreground px-1">
+                    <span>30s (Fast)</span>
+                    <span>300s (Patient)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border">
+                    {currentLang === 'en' 
+                      ? 'Maximum time to wait for AI generation before timeout'
+                      : 'Maksimal tid å vente på AI-generering før timeout'
+                    }
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentLang === 'en' 
-                    ? 'Maximum time to wait for AI generation before timeout'
-                    : 'Maksimal tid å vente på AI-generering før timeout'
-                  }
-                </p>
               </div>
             </CardContent>
           </Card>

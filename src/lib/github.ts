@@ -1,10 +1,13 @@
 import { Octokit } from '@octokit/rest'
 import { GitHubIssue, GitHubRepository } from './types'
+import { GitHubCacheManager } from './cache'
 
 export class GitHubService {
   private octokit: Octokit
+  private token: string
 
   constructor(token: string) {
+    this.token = token
     this.octokit = new Octokit({
       auth: token
     })
@@ -16,12 +19,22 @@ export class GitHubService {
   }
 
   async getRepositories(): Promise<GitHubRepository[]> {
-    const { data } = await this.octokit.rest.repos.listForAuthenticatedUser({
+    // Check cache first if enabled
+    if (GitHubCacheManager.isCacheEnabled()) {
+      const cached = await GitHubCacheManager.getCachedRepositories<GitHubRepository[]>(this.token)
+      if (cached) {
+        console.log('Cache HIT: repositories')
+        return cached
+      }
+      console.log('Cache MISS: repositories')
+    }
+
+    const { data, headers } = await this.octokit.rest.repos.listForAuthenticatedUser({
       sort: 'updated',
       per_page: 100
     })
     
-    return data.map(repo => ({
+    const repositories = data.map(repo => ({
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -38,17 +51,43 @@ export class GitHubService {
       open_issues_count: repo.open_issues_count || 0,
       has_issues: repo.has_issues
     }))
+
+    // Cache the result if enabled
+    if (GitHubCacheManager.isCacheEnabled()) {
+      await GitHubCacheManager.setCachedRepositories(
+        this.token, 
+        repositories, 
+        headers.etag
+      )
+    }
+
+    return repositories
   }
 
   async getIssues(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'open'): Promise<GitHubIssue[]> {
-    const { data } = await this.octokit.rest.issues.listForRepo({
+    // Check cache first if enabled
+    if (GitHubCacheManager.isCacheEnabled()) {
+      const cached = await GitHubCacheManager.getCachedIssues<GitHubIssue[]>(
+        owner, 
+        repo, 
+        state, 
+        this.token
+      )
+      if (cached) {
+        console.log(`Cache HIT: issues ${owner}/${repo} (${state})`)
+        return cached
+      }
+      console.log(`Cache MISS: issues ${owner}/${repo} (${state})`)
+    }
+
+    const { data, headers } = await this.octokit.rest.issues.listForRepo({
       owner,
       repo,
       state,
       per_page: 100
     })
 
-    return data.map(issue => ({
+    const issues = data.map(issue => ({
       id: issue.id,
       number: issue.number,
       title: issue.title,
@@ -73,6 +112,20 @@ export class GitHubService {
       updated_at: issue.updated_at,
       html_url: issue.html_url
     }))
+
+    // Cache the result if enabled
+    if (GitHubCacheManager.isCacheEnabled()) {
+      await GitHubCacheManager.setCachedIssues(
+        owner, 
+        repo, 
+        state, 
+        this.token, 
+        issues, 
+        headers.etag
+      )
+    }
+
+    return issues
   }
 
   async getIssue(owner: string, repo: string, issueNumber: number): Promise<GitHubIssue> {

@@ -35,6 +35,15 @@ export interface UserPreferences {
       maxTokens: number
       testCount: number
     }
+    // Extended features from AI Generator
+    interfaceLanguage: 'en' | 'no'
+    generationLanguage: 'en' | 'no'
+    autoDetectLanguage: boolean
+    detailLevel: 'basic' | 'standard' | 'comprehensive' | 'expert'
+    focusAreas: string[]
+    selectedTemplate: string
+    streamingMode: boolean
+    requestTimeout: number
   }
   testExecution: {
     defaultTimeout: number
@@ -73,7 +82,16 @@ export const defaultPreferences: UserPreferences = {
       temperature: 0.7,
       maxTokens: 2000,
       testCount: 5
-    }
+    },
+    // Extended features from AI Generator
+    interfaceLanguage: 'en',
+    generationLanguage: 'en',
+    autoDetectLanguage: true,
+    detailLevel: 'standard',
+    focusAreas: ['happy_path', 'edge_cases', 'error_handling'],
+    selectedTemplate: 'default',
+    streamingMode: false,
+    requestTimeout: 120
   },
   testExecution: {
     defaultTimeout: 30000, // 30 seconds
@@ -125,22 +143,36 @@ export class UserPreferencesManager {
     return defaultPreferences
   }
 
-  private static mergeWithDefaults(stored: any): UserPreferences {
+  private static mergeWithDefaults(stored: Record<string, unknown>): UserPreferences {
     return this.deepMerge(defaultPreferences, stored)
   }
 
-  private static deepMerge(target: any, source: any): any {
+  static deepMerge<T extends Record<string, unknown>>(
+    target: T, 
+    source: Record<string, unknown>
+  ): T {
     const result = { ...target }
     
     for (const key in source) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-        result[key] = this.deepMerge(target[key] || {}, source[key])
+      const sourceValue = source[key]
+      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        result[key] = this.deepMerge(
+          (target[key] as Record<string, unknown>) || {}, 
+          sourceValue as Record<string, unknown>
+        ) as T[Extract<keyof T, string>]
       } else {
-        result[key] = source[key]
+        result[key] = sourceValue as T[Extract<keyof T, string>]
       }
     }
     
     return result
+  }
+
+  private static deepMergePrivate<T extends Record<string, unknown>>(
+    target: T, 
+    source: Record<string, unknown>
+  ): T {
+    return this.deepMerge(target, source)
   }
 
   // Validation methods
