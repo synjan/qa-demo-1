@@ -14,7 +14,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
   { name: 'Test Cases', href: '/testcases', icon: TestTube2 },
   { name: 'Test Plans', href: '/testplans', icon: FolderOpen },
+  { name: 'AI Generator', href: '/ai-generator', icon: Sparkles },
   { name: 'GitHub Issues', href: '/github', icon: GitBranch },
 ]
 

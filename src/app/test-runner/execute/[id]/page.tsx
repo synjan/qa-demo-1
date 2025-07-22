@@ -342,14 +342,14 @@ export default function ExecuteTest() {
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Action to Perform</h4>
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
                   <p className="text-sm">{currentStep.action}</p>
                 </div>
               </div>
 
               <div>
                 <h4 className="font-medium mb-2">Expected Result</h4>
-                <div className="bg-green-50 p-4 rounded-lg">
+                <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
                   <p className="text-sm">{currentStep.expectedResult}</p>
                 </div>
               </div>

@@ -1,14 +1,17 @@
 import OpenAI from 'openai'
 import { TestCase, TestStep, GitHubIssue } from './types'
 import { v4 as uuidv4 } from 'uuid'
+import { PromptTemplateService, Language } from './prompt-templates'
 
 export class OpenAIService {
   private openai: OpenAI
+  private templateService: PromptTemplateService
 
   constructor() {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     })
+    this.templateService = PromptTemplateService.getInstance()
   }
 
   async generateTestCase(issue: GitHubIssue, repository: string, username: string): Promise<TestCase> {
@@ -132,6 +135,489 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
     
     return testCases
   }
+
+  async generateFromFreeText(
+    text: string, 
+    username: string, 
+    options?: {
+      templateId?: string,
+      language?: Language,
+      temperature?: number,
+      maxTokens?: number,
+      testCount?: number
+    }
+  ): Promise<TestCase[]> {
+    const templateId = options?.templateId || 'default'
+    const language = options?.language || 'en'
+    const temperature = options?.temperature || 0.7
+    const maxTokens = options?.maxTokens || 3000
+    const testCount = options?.testCount || 5
+
+    // Retry logic with increasingly strict prompts
+    const maxRetries = 3
+    let lastError = null
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const template = this.templateService.getTemplate(templateId)
+        if (!template) {
+          throw new Error(`Template "${templateId}" not found`)
+        }
+
+        // Get base prompts
+        const systemPrompt = template.systemPrompt[language]
+        
+        // Create increasingly strict JSON reminders based on attempt number
+        let jsonReminder = ''
+        let strictness = ''
+        
+        if (attempt === 0) {
+          jsonReminder = language === 'no' ? 
+            'PÅMINNELSE: Svar kun med gyldig JSON-array. Ingen tekst utenfor JSON.' :
+            'REMINDER: Respond only with valid JSON array. No text outside JSON.'
+        } else if (attempt === 1) {
+          jsonReminder = language === 'no' ?
+            'KRITISK: Du har feilet tidligere. Svar KUN med JSON. Start med [ og slutt med ]. Ingen annen tekst.' :
+            'CRITICAL: You failed before. Respond ONLY with JSON. Start with [ and end with ]. No other text.'
+          strictness = ' (RETRY - JSON ONLY)'
+        } else {
+          jsonReminder = language === 'no' ?
+            'SISTE SJANSE: Systemet krasjer hvis du ikke svarer med ren JSON. KUN [ ... ]. INGEN ANNEN TEKST.' :
+            'FINAL ATTEMPT: System crashes if you don\'t respond with pure JSON. ONLY [ ... ]. NO OTHER TEXT.'
+          strictness = ' (FINAL RETRY - PURE JSON OR SYSTEM FAILURE)'
+        }
+        
+        const userPrompt = `${template.userPromptPrefix[language]}\n\n"${text}"\n\nGenerate ${testCount} test cases that focus on: ${template.focusAreas.join(', ')}.\n\n${jsonReminder}\n\nRESPOND ONLY IN JSON FORMAT - START WITH [ AND END WITH ]${strictness}`
+
+        const completion = await this.openai.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: userPrompt
+            }
+          ],
+          temperature: Math.max(0.1, Math.min(temperature, 0.3) - (attempt * 0.1)), // Lower temperature each retry
+          max_tokens: maxTokens,
+          stop: ['```', 'Test Case', 'Note:', '**'], // Stop sequences that indicate non-JSON format (max 4 allowed)
+        })
+
+        const response = completion.choices[0]?.message?.content
+        if (!response) {
+          throw new Error('No response from OpenAI')
+        }
+
+        console.log(`Attempt ${attempt + 1} - Raw OpenAI response:`, response)
+        console.log('Response length:', response.length)
+
+        // Extract JSON from the response (handle markdown code blocks)
+        const cleanedResponse = this.extractJsonFromResponse(response)
+        console.log('Cleaned response:', cleanedResponse)
+
+        let generatedData
+        try {
+          generatedData = JSON.parse(cleanedResponse)
+          
+          // Validate that it's an array
+          if (!Array.isArray(generatedData)) {
+            throw new Error('Response is not a JSON array')
+          }
+          
+          console.log(`Success on attempt ${attempt + 1}`)
+          
+        } catch (jsonError) {
+          console.error(`Attempt ${attempt + 1} JSON parsing failed:`, jsonError)
+          console.error('Attempted to parse:', cleanedResponse.substring(0, 200))
+          
+          // Store error and try fallback conversion if this is not the last attempt
+          lastError = new Error(`Attempt ${attempt + 1}: ${jsonError.message}. Response preview: ${cleanedResponse.substring(0, 100)}...`)
+          
+          if (attempt < maxRetries - 1) {
+            console.log(`Retrying with stricter prompt (attempt ${attempt + 2}/${maxRetries})`)
+            continue // Try again with stricter prompt
+          } else {
+            // Last attempt - try fallback conversion
+            console.log('Final attempt failed, trying fallback text-to-JSON conversion')
+            generatedData = this.attemptTextToJsonConversion(cleanedResponse)
+            if (!generatedData) {
+              throw lastError // Re-throw the JSON parsing error if fallback fails
+            }
+          }
+        }
+        
+        // Convert to full TestCase objects - handle different AI response formats
+        const testCases: TestCase[] = generatedData.map((testData: any) => {
+          // Map different field names that AI might use
+          const title = testData.title || testData.testCaseID || testData.name || 'Generated Test Case'
+          const description = testData.description || ''
+          const preconditions = testData.preconditions || ''
+          
+          // Handle different step formats with improved debugging
+          let steps = []
+          console.log('Processing testData.steps:', testData.steps, 'Type:', typeof testData.steps)
+          
+          if (Array.isArray(testData.steps) && testData.steps.length > 0) {
+            console.log('Steps is array with length:', testData.steps.length, 'First item type:', typeof testData.steps[0])
+            
+            if (typeof testData.steps[0] === 'string') {
+              // AI returned steps as string array - convert to proper format
+              console.log('Converting string array steps')
+              steps = testData.steps.map((stepText: string, index: number) => ({
+                id: uuidv4(),
+                stepNumber: index + 1,
+                action: stepText.trim(),
+                expectedResult: 'Step completes successfully'
+              }))
+            } else if (testData.steps[0] && typeof testData.steps[0] === 'object') {
+              // AI returned steps as object array
+              console.log('Converting object array steps')
+              steps = testData.steps.map((step: any, index: number) => ({
+                id: uuidv4(),
+                stepNumber: index + 1,
+                action: step.action || step.step || step.description || `Step ${index + 1}`,
+                expectedResult: step.expectedResult || step.expected || 'Step completes successfully'
+              }))
+            }
+          }
+          
+          // If no steps, create a basic step from the description
+          if (steps.length === 0) {
+            console.log('No steps found, creating default step')
+            steps = [{
+              id: uuidv4(),
+              stepNumber: 1,
+              action: description || 'Execute the test scenario',
+              expectedResult: testData.expectedResult || 'Test passes successfully'
+            }]
+          }
+          
+          console.log('Final processed steps:', steps)
+          
+          return {
+            id: uuidv4(),
+            title: title,
+            description: description,
+            preconditions: preconditions,
+            steps: steps,
+            expectedResult: testData.expectedResult || 'Test completes successfully',
+            priority: testData.priority || 'medium',
+            tags: testData.tags || ['ai-generated'],
+            githubIssue: undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: username
+          }
+        })
+
+        return testCases
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error in attempt ' + (attempt + 1))
+        console.error(`Attempt ${attempt + 1} failed:`, error)
+        if (attempt === maxRetries - 1) {
+          break // Exit retry loop on final attempt
+        }
+      }
+    }
+    
+    // If we get here, all retries failed
+    console.error('All retry attempts failed')
+    throw lastError || new Error('Failed to generate test cases with AI after multiple attempts')
+  }
+
+  /**
+   * Generate test cases with streaming support
+   */
+  async generateFromFreeTextStream(
+    text: string,
+    username: string,
+    options?: {
+      templateId?: string,
+      language?: Language,
+      temperature?: number,
+      maxTokens?: number,
+      testCount?: number
+    },
+    onChunk?: (chunk: any) => void
+  ): Promise<void> {
+    const templateId = options?.templateId || 'default'
+    const language = options?.language || 'en'
+    const temperature = options?.temperature || 0.7
+    const maxTokens = options?.maxTokens || 3000
+    const testCount = options?.testCount || 5
+
+    try {
+      const template = this.templateService.getTemplate(templateId)
+      if (!template) {
+        throw new Error(`Template "${templateId}" not found`)
+      }
+
+      const systemPrompt = template.systemPrompt[language]
+      const languageInstruction = language === 'no' ? 
+        'PÅMINNELSE: Svar kun med gyldig JSON-array. Ingen tekst utenfor JSON.' :
+        'REMINDER: Respond only with valid JSON array. No text outside JSON.'
+        
+      const userPrompt = `${template.userPromptPrefix[language]}\n\n"${text}"\n\nGenerate ${testCount} test cases that focus on: ${template.focusAreas.join(', ')}.\n\n${languageInstruction}\n\nRESPOND ONLY IN JSON FORMAT - START WITH [ AND END WITH ]`
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        temperature: Math.min(temperature, 0.3),
+        max_tokens: maxTokens,
+        stop: ['```', 'Test Case', 'Note:', '**'],
+        stream: true
+      })
+
+      let accumulatedContent = ''
+      let testCaseBuffer = ''
+      let insideArray = false
+      let braceDepth = 0
+      let testCaseCount = 0
+
+      for await (const chunk of completion) {
+        const content = chunk.choices[0]?.delta?.content || ''
+        accumulatedContent += content
+        testCaseBuffer += content
+
+        // Track if we're inside the JSON array
+        for (const char of content) {
+          if (char === '[' && !insideArray) {
+            insideArray = true
+            onChunk?.({ type: 'start', message: 'Starting test case generation...' })
+          } else if (char === '{') {
+            braceDepth++
+          } else if (char === '}') {
+            braceDepth--
+            
+            // When we close a test case object
+            if (braceDepth === 0 && insideArray) {
+              try {
+                // Try to parse the accumulated test case
+                const match = testCaseBuffer.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/)
+                if (match) {
+                  const testCaseJson = match[0]
+                  const testCaseData = JSON.parse(testCaseJson)
+                  
+                  // Convert to our format
+                  const convertedTestCase = this.convertAIResponseToTestCase(testCaseData, username)
+                  
+                  testCaseCount++
+                  onChunk?.({ 
+                    type: 'testcase', 
+                    testCase: convertedTestCase,
+                    index: testCaseCount
+                  })
+                  
+                  // Clear the buffer for the next test case
+                  testCaseBuffer = testCaseBuffer.substring(testCaseBuffer.indexOf(testCaseJson) + testCaseJson.length)
+                }
+              } catch (error) {
+                // Continue if parsing fails for this chunk
+                console.warn('Failed to parse streaming chunk:', error)
+              }
+            }
+          }
+        }
+      }
+
+      onChunk?.({ type: 'complete', totalGenerated: testCaseCount })
+
+    } catch (error) {
+      console.error('Error in streaming generation:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Convert AI response format to our TestCase format
+   */
+  private convertAIResponseToTestCase(testData: any, username: string): any {
+    const title = testData.title || testData.testCaseID || testData.name || 'Generated Test Case'
+    const description = testData.description || ''
+    const preconditions = testData.preconditions || ''
+    
+    // Handle different step formats
+    let steps = []
+    if (Array.isArray(testData.steps)) {
+      if (typeof testData.steps[0] === 'string') {
+        steps = testData.steps.map((stepText: string, index: number) => ({
+          id: crypto.randomUUID(),
+          stepNumber: index + 1,
+          action: stepText.trim(),
+          expectedResult: 'Step completes successfully'
+        }))
+      } else if (testData.steps[0] && typeof testData.steps[0] === 'object') {
+        steps = testData.steps.map((step: any, index: number) => ({
+          id: crypto.randomUUID(),
+          stepNumber: index + 1,
+          action: step.action || step.step || step.description || `Step ${index + 1}`,
+          expectedResult: step.expectedResult || step.expected || 'Step completes successfully'
+        }))
+      }
+    }
+    
+    if (steps.length === 0) {
+      steps = [{
+        id: crypto.randomUUID(),
+        stepNumber: 1,
+        action: description || 'Execute the test scenario',
+        expectedResult: testData.expectedResult || 'Test passes successfully'
+      }]
+    }
+    
+    return {
+      id: crypto.randomUUID(),
+      title: title,
+      description: description,
+      preconditions: preconditions,
+      steps: steps,
+      expectedResult: testData.expectedResult || 'Test completes successfully',
+      priority: testData.priority || 'medium',
+      tags: testData.tags || ['ai-generated'],
+      githubIssue: undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: username
+    }
+  }
+
+  /**
+   * Extract JSON content from AI response, handling various formats
+   * including markdown code blocks and extra text
+   */
+  private extractJsonFromResponse(response: string): string {
+    // Remove leading/trailing whitespace
+    let cleaned = response.trim()
+    
+    // Check if response is wrapped in markdown code blocks
+    const codeBlockMatch = cleaned.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/)
+    if (codeBlockMatch) {
+      return codeBlockMatch[1].trim()
+    }
+    
+    // Look for JSON array starting with [ and ending with ]
+    const jsonArrayMatch = cleaned.match(/(\[[\s\S]*\])/)
+    if (jsonArrayMatch) {
+      return jsonArrayMatch[1].trim()
+    }
+    
+    // Look for JSON object starting with { and ending with }
+    const jsonObjectMatch = cleaned.match(/(\{[\s\S]*\})/)
+    if (jsonObjectMatch) {
+      return jsonObjectMatch[1].trim()
+    }
+    
+    // If no patterns match, return the original response
+    // This will likely fail JSON parsing, but we'll get better error messages
+    return cleaned
+  }
+
+  /**
+   * Attempt to convert structured text to JSON format as a fallback
+   * Handles the specific format that GPT returned (Test Case 1: etc.)
+   */
+  private attemptTextToJsonConversion(text: string): any[] | null {
+    try {
+      console.log('Attempting text-to-JSON conversion...')
+      
+      // Split by "Test Case" pattern
+      const testCaseBlocks = text.split(/Test Case \d+:/i).filter(block => block.trim())
+      
+      if (testCaseBlocks.length === 0) {
+        return null
+      }
+      
+      const testCases = []
+      
+      for (const block of testCaseBlocks) {
+        const lines = block.trim().split('\n').map(line => line.trim()).filter(line => line)
+        
+        if (lines.length === 0) continue
+        
+        const testCase: any = {
+          title: '',
+          description: '',
+          preconditions: '',
+          steps: [],
+          expectedResult: '',
+          priority: 'medium',
+          tags: ['ai-generated']
+        }
+        
+        // Extract title from first line
+        testCase.title = lines[0].replace(/^[\-\•]\s*/, '').trim()
+        
+        let currentSection = 'title'
+        let stepNumber = 1
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i]
+          
+          if (line.toLowerCase().includes('trinn:') || line.toLowerCase().includes('steps:')) {
+            currentSection = 'steps'
+            const stepText = line.replace(/^.*?trinn:\s*/i, '').replace(/^.*?steps:\s*/i, '')
+            if (stepText.trim()) {
+              testCase.steps.push({
+                action: stepText.trim(),
+                expectedResult: 'Complete the action successfully'
+              })
+            }
+          } else if (line.toLowerCase().includes('forventet resultat:') || line.toLowerCase().includes('expected result:')) {
+            currentSection = 'expectedResult'
+            testCase.expectedResult = line.replace(/^.*?(forventet resultat|expected result):\s*/i, '').trim()
+          } else if (line.toLowerCase().includes('validering:') || line.toLowerCase().includes('validation:')) {
+            // Add validation as additional step or expected result
+            if (testCase.expectedResult) {
+              testCase.expectedResult += ' ' + line.replace(/^.*?(validering|validation):\s*/i, '').trim()
+            }
+          } else if (line.startsWith('-') || line.startsWith('•')) {
+            // Handle bullet points as steps
+            const stepText = line.replace(/^[\-\•]\s*/, '').trim()
+            if (stepText && currentSection === 'steps') {
+              testCase.steps.push({
+                action: stepText,
+                expectedResult: 'Step completes successfully'
+              })
+            }
+          }
+        }
+        
+        // Set description based on title or content
+        testCase.description = `Test case for: ${testCase.title}`
+        
+        // Ensure we have at least one step
+        if (testCase.steps.length === 0) {
+          testCase.steps.push({
+            action: testCase.title || 'Execute test scenario',
+            expectedResult: testCase.expectedResult || 'Test passes successfully'
+          })
+        }
+        
+        testCases.push(testCase)
+      }
+      
+      console.log(`Converted ${testCases.length} test cases from text format`)
+      return testCases
+      
+    } catch (error) {
+      console.error('Text-to-JSON conversion failed:', error)
+      return null
+    }
+  }
+
 
   static createInstance(): OpenAIService {
     return new OpenAIService()

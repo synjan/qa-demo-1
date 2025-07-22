@@ -155,7 +155,7 @@ export default function ViewTestCase() {
               {testCase.preconditions && (
                 <div>
                   <h4 className="font-medium mb-2">Preconditions</h4>
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
                     <p className="text-sm">{testCase.preconditions}</p>
                   </div>
                 </div>
@@ -163,7 +163,7 @@ export default function ViewTestCase() {
 
               <div>
                 <h4 className="font-medium mb-2">Expected Final Result</h4>
-                <div className="bg-green-50 p-4 rounded-lg">
+                <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
                   <p className="text-sm">{testCase.expectedResult}</p>
                 </div>
               </div>

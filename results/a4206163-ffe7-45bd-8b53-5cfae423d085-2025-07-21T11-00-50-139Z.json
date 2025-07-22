@@ -1,0 +1,53 @@
+{
+  "id": "a4206163-ffe7-45bd-8b53-5cfae423d085",
+  "testPlanId": "ad-hoc-single-test-case",
+  "name": "Ad-hoc run: Test Case: Translate App to Norwegian",
+  "startedAt": "2025-07-21T11:00:17.447Z",
+  "status": "completed",
+  "executedBy": "synjan",
+  "results": [
+    {
+      "testCaseId": "234c0d10-1542-4b51-8a02-63d94d2dbac0",
+      "status": "pass",
+      "executedAt": "2025-07-21T11:00:45.138Z",
+      "steps": [
+        {
+          "stepId": "step-1",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-2",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-3",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-4",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-5",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-6",
+          "status": "pass",
+          "notes": "ok"
+        },
+        {
+          "stepId": "step-7",
+          "status": "fail",
+          "notes": "no"
+        }
+      ]
+    }
+  ],
+  "completedAt": "2025-07-21T11:00:49.858Z"
+}

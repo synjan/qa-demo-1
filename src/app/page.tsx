@@ -7,7 +7,7 @@ import { Navigation } from '@/components/layout/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock, Heart, Upload, FileText, Download, BarChart, Copy } from 'lucide-react'
+import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock, Heart, Upload, FileText, Download, BarChart, Copy, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { FavoriteTestsModal } from '@/components/modals/FavoriteTestsModal'
 import { ImportTestCasesModal } from '@/components/modals/ImportTestCasesModal'
@@ -56,7 +56,15 @@ const quickActions = [
     category: 'creation'
   },
   {
-    title: 'Generate Test Cases',
+    title: 'AI Test Generator',
+    description: 'Generate test cases from any text using AI',
+    icon: Sparkles,
+    href: '/ai-generator',
+    color: 'bg-gradient-to-r from-purple-500 to-pink-500',
+    category: 'creation'
+  },
+  {
+    title: 'Generate from GitHub',
     description: 'Create test cases from GitHub issues using AI',
     icon: TestTube2,
     href: '/github',

@@ -36,36 +36,40 @@ export class FileUtils {
     const filePath = path.join(this.testCasesDir, filename)
     
     try {
+      // Clean the test case object to avoid undefined values that break gray-matter
       const frontmatter = {
-        id: testCase.id,
-        title: testCase.title,
-        description: testCase.description,
-        preconditions: testCase.preconditions,
-        expectedResult: testCase.expectedResult,
-        priority: testCase.priority,
-        tags: testCase.tags,
-        githubIssue: testCase.githubIssue,
-        createdAt: testCase.createdAt,
-        updatedAt: testCase.updatedAt,
-        createdBy: testCase.createdBy
+        id: testCase.id || '',
+        title: testCase.title || '',
+        description: testCase.description || '',
+        preconditions: testCase.preconditions || '',
+        expectedResult: testCase.expectedResult || '',
+        priority: testCase.priority || 'medium',
+        tags: testCase.tags || [],
+        githubIssue: testCase.githubIssue || null,
+        createdAt: testCase.createdAt || new Date().toISOString(),
+        updatedAt: testCase.updatedAt || new Date().toISOString(),
+        createdBy: testCase.createdBy || 'unknown'
       }
 
       // Create markdown content with test steps
-      let markdownContent = `# ${testCase.title}\n\n`
-      markdownContent += `${testCase.description}\n\n`
+      let markdownContent = `# ${frontmatter.title}\n\n`
+      markdownContent += `${frontmatter.description}\n\n`
       
-      if (testCase.preconditions) {
-        markdownContent += `## Preconditions\n\n${testCase.preconditions}\n\n`
+      if (frontmatter.preconditions) {
+        markdownContent += `## Preconditions\n\n${frontmatter.preconditions}\n\n`
       }
       
       markdownContent += `## Test Steps\n\n`
-      testCase.steps.forEach((step, index) => {
+      
+      // Ensure steps exist and are properly formatted
+      const steps = testCase.steps || []
+      steps.forEach((step, index) => {
         markdownContent += `### Step ${index + 1}\n\n`
-        markdownContent += `**Action:** ${step.action}\n\n`
-        markdownContent += `**Expected Result:** ${step.expectedResult}\n\n`
+        markdownContent += `**Action:** ${step.action || 'No action specified'}\n\n`
+        markdownContent += `**Expected Result:** ${step.expectedResult || 'No expected result specified'}\n\n`
       })
       
-      markdownContent += `## Expected Final Result\n\n${testCase.expectedResult}\n`
+      markdownContent += `## Expected Final Result\n\n${frontmatter.expectedResult}\n`
       
       const fileContent = matter.stringify(markdownContent, frontmatter)
       await fs.writeFile(filePath, fileContent, 'utf-8')

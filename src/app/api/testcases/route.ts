@@ -29,12 +29,20 @@ export async function POST(request: NextRequest) {
   try {
     const testCase = await request.json()
     
+    console.log('[Save Debug] Received test case:', JSON.stringify(testCase, null, 2))
+    
     // Basic validation
     if (!testCase.id || !testCase.title || !testCase.steps) {
       return NextResponse.json(
         { error: 'Missing required fields: id, title, steps' },
         { status: 400 }
       )
+    }
+    
+    // Check for undefined values that could break gray-matter
+    const hasUndefinedValues = Object.values(testCase).some(value => value === undefined)
+    if (hasUndefinedValues) {
+      console.log('[Save Debug] Found undefined values in test case:', testCase)
     }
     
     await FileUtils.saveTestCase(testCase)
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error saving test case:', error)
     return NextResponse.json(
-      { error: 'Failed to save test case' },
+      { error: 'Failed to save test case', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
