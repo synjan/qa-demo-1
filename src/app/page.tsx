@@ -4,15 +4,17 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/layout/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { TestTube2, FolderOpen, GitBranch, Plus, TrendingUp, Loader2, Play, CheckCircle, XCircle, Clock, Heart, Upload, FileText, Download, BarChart, Copy, Sparkles } from 'lucide-react'
-import Link from 'next/link'
+import { TestTube2, FolderOpen, GitBranch, Plus, Heart, Upload, Download, BarChart, Copy, Sparkles, Edit3, Zap, Activity, TrendingUp, Clock, Monitor, X } from 'lucide-react'
 import { FavoriteTestsModal } from '@/components/modals/FavoriteTestsModal'
 import { ImportTestCasesModal } from '@/components/modals/ImportTestCasesModal'
 import { ExportResultsModal } from '@/components/modals/ExportResultsModal'
 import { CloneTestPlanModal } from '@/components/modals/CloneTestPlanModal'
+import { StatsWidget } from '@/components/dashboard/StatsWidget'
+import { QuickActionsWidget } from '@/components/dashboard/QuickActionsWidget'
+import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget'
+import { AddWidgetModal } from '@/components/dashboard/AddWidgetModal'
+import { UserPreferencesManager } from '@/lib/user-preferences'
 
 const quickActions = [
   {
@@ -89,6 +91,15 @@ const quickActions = [
   }
 ]
 
+const availableWidgets = [
+  { id: 'stats', label: 'Statistics Overview', icon: BarChart, description: 'Test case counts and success rates', category: 'Analytics' },
+  { id: 'quick-actions', label: 'Quick Actions', icon: Zap, description: 'Fast access to common tasks', category: 'Actions' },
+  { id: 'recent-activity', label: 'Recent Activity', icon: Activity, description: 'Latest test executions and changes', category: 'Activity' },
+  { id: 'trending', label: 'Trending Issues', icon: TrendingUp, description: 'Most active GitHub issues', category: 'Analytics' },
+  { id: 'schedule', label: 'Test Schedule', icon: Clock, description: 'Upcoming scheduled test runs', category: 'Planning' },
+  { id: 'performance', label: 'Performance Metrics', icon: Monitor, description: 'System and test performance data', category: 'Analytics' }
+]
+
 interface DashboardStats {
   totalTestCases: number
   totalTestPlans: number
@@ -107,7 +118,7 @@ interface Activity {
   description: string
   timestamp: string
   status: string
-  metadata: any
+  metadata: Record<string, unknown>
 }
 
 export default function Dashboard() {
@@ -118,7 +129,11 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activity, setActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  
+  // Widget management states
+  const [enabledWidgets, setEnabledWidgets] = useState<string[]>([])
+  const [editMode, setEditMode] = useState(false)
+  const [showAddWidgetModal, setShowAddWidgetModal] = useState(false)
   
   // Modal states
   const [showFavoritesModal, setShowFavoritesModal] = useState(false)
@@ -137,6 +152,10 @@ export default function Dashboard() {
       }
     }
     
+    // Load user preferences for enabled widgets
+    const preferences = UserPreferencesManager.getUserPreferences()
+    setEnabledWidgets(preferences.dashboard.widgets)
+    
     // Load dashboard data
     loadDashboardData()
   }, [session, status, router])
@@ -144,7 +163,6 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      setError(null)
       
       const [statsResponse, activityResponse] = await Promise.all([
         fetch('/api/dashboard/stats'),
@@ -163,46 +181,12 @@ export default function Dashboard() {
       setStats(statsData)
       setActivity(activityData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      console.error('Failed to load dashboard:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const getActivityIcon = (type: string, status: string) => {
-    switch (type) {
-      case 'test_run':
-        if (status === 'completed') return <CheckCircle className="h-4 w-4 text-success" />
-        if (status === 'in_progress') return <Play className="h-4 w-4 text-info" />
-        return <Clock className="h-4 w-4 text-muted-foreground" />
-      case 'test_case':
-        return <TestTube2 className="h-4 w-4 text-info" />
-      case 'test_plan':
-        return <FolderOpen className="h-4 w-4 text-purple-500" />
-      default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />
-    }
-  }
-
-  const getActivityTypeLabel = (type: string) => {
-    switch (type) {
-      case 'test_run': return 'Test Run'
-      case 'test_case': return 'Test Case'
-      case 'test_plan': return 'Test Plan'
-      default: return type
-    }
-  }
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString()
-  }
-
-  const getChangeIndicator = (current: number, recent: number) => {
-    if (recent > 0) {
-      return `+${recent} this week`
-    }
-    return 'No recent activity'
-  }
 
   const handleQuickAction = (action: string) => {
     switch (action) {
@@ -223,6 +207,42 @@ export default function Dashboard() {
     }
   }
 
+  const handleRemoveWidget = (widgetId: string) => {
+    const updatedWidgets = enabledWidgets.filter(id => id !== widgetId)
+    setEnabledWidgets(updatedWidgets)
+    
+    // Update user preferences
+    UserPreferencesManager.updatePreferences({
+      dashboard: {
+        widgets: updatedWidgets
+      }
+    })
+  }
+
+  const handleAddWidget = (widgetId: string) => {
+    const updatedWidgets = [...enabledWidgets, widgetId]
+    setEnabledWidgets(updatedWidgets)
+    
+    // Update user preferences
+    UserPreferencesManager.updatePreferences({
+      dashboard: {
+        widgets: updatedWidgets
+      }
+    })
+  }
+
+  const toggleEditMode = () => {
+    setEditMode(!editMode)
+  }
+
+  const getAvailableWidgets = () => {
+    return availableWidgets.filter(widget => !enabledWidgets.includes(widget.id))
+  }
+
+  const isWidgetEnabled = (widgetId: string) => {
+    return enabledWidgets.includes(widgetId)
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -237,217 +257,127 @@ export default function Dashboard() {
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="mt-2 text-muted-foreground">
-              Welcome to QA Test Manager. Manage your test cases, plans, and GitHub integration.
-            </p>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <div className="animate-pulse">
-                      <div className="h-4 bg-muted rounded mb-2 w-20"></div>
-                      <div className="h-8 bg-muted rounded mb-2 w-16"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : stats ? (
-              <>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Test Cases</p>
-                        <p className="text-2xl font-bold text-foreground">{stats.totalTestCases}</p>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        {getChangeIndicator(stats.totalTestCases, stats.recentTestCases)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Test Plans</p>
-                        <p className="text-2xl font-bold text-foreground">{stats.totalTestPlans}</p>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        {getChangeIndicator(stats.totalTestPlans, stats.recentTestPlans)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Test Runs</p>
-                        <p className="text-2xl font-bold text-foreground">{stats.totalTestRuns}</p>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        {getChangeIndicator(stats.totalTestRuns, stats.recentTestRuns)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Pass Rate</p>
-                        <p className="text-2xl font-bold text-foreground">{stats.passRate}%</p>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        Based on {stats.totalTestRuns} runs
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <div className="col-span-4 text-center text-muted-foreground">
-                Failed to load statistics
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickActions.map((action) => (
-                <Card key={action.title} className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                        <action.icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base leading-tight">{action.title}</CardTitle>
-                      </div>
-                    </div>
-                    <CardDescription className="text-sm leading-snug">{action.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {action.href ? (
-                      <Link href={action.href}>
-                        <Button className="w-full" size="sm">
-                          <Play className="h-3 w-3 mr-2" />
-                          Start
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Button 
-                        className="w-full" 
-                        size="sm"
-                        onClick={() => handleQuickAction(action.action!)}
-                      >
-                        <Play className="h-3 w-3 mr-2" />
-                        Open
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+              <p className="mt-2 text-muted-foreground">
+                Welcome to QA Test Manager. Manage your test cases, plans, and GitHub integration.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {getAvailableWidgets().length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddWidgetModal(true)}
+                  disabled={editMode}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Widget
+                </Button>
+              )}
+              <Button
+                variant={editMode ? "default" : "outline"}
+                size="sm"
+                onClick={toggleEditMode}
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                {editMode ? 'Done Editing' : 'Edit Dashboard'}
+              </Button>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Your latest test cases, plans, and runs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-muted rounded"></div>
-                        <div className="flex-1">
-                          <div className="h-4 bg-muted rounded mb-2 w-48"></div>
-                          <div className="h-3 bg-muted rounded w-32"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+          {/* Dynamic Widgets */}
+          <div className="space-y-6">
+            {isWidgetEnabled('stats') && (
+              <StatsWidget
+                stats={stats}
+                loading={loading}
+                editMode={editMode}
+                onRemove={() => handleRemoveWidget('stats')}
+              />
+            )}
+
+            {isWidgetEnabled('quick-actions') && (
+              <QuickActionsWidget
+                actions={quickActions}
+                onQuickAction={handleQuickAction}
+                editMode={editMode}
+                onRemove={() => handleRemoveWidget('quick-actions')}
+              />
+            )}
+
+            {isWidgetEnabled('recent-activity') && (
+              <RecentActivityWidget
+                activity={activity}
+                loading={loading}
+                onRefresh={loadDashboardData}
+                editMode={editMode}
+                onRemove={() => handleRemoveWidget('recent-activity')}
+              />
+            )}
+
+            {/* Future widgets placeholder */}
+            {isWidgetEnabled('trending') && (
+              <div className="relative">
+                {editMode && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 z-10 h-6 w-6 p-0 rounded-full"
+                    onClick={() => handleRemoveWidget('trending')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                <div className="p-8 border-2 border-dashed border-muted-foreground/20 rounded-lg text-center text-muted-foreground">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="font-medium">Trending Issues Widget</p>
+                  <p className="text-sm">Coming soon</p>
                 </div>
-              ) : activity.length > 0 ? (
-                <div className="space-y-4">
-                  {activity.map((item) => (
-                    <div key={item.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-accent transition-colors">
-                      <div className="flex-shrink-0 mt-1">
-                        {getActivityIcon(item.type, item.status)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-foreground truncate">
-                            {item.title}
-                          </p>
-                          <Badge variant="outline" className="text-xs">
-                            {getActivityTypeLabel(item.type)}
-                          </Badge>
-                          {item.status === 'completed' && item.type === 'test_run' && (
-                            <Badge className="text-xs bg-success/10 text-success border-success/20">
-                              {item.metadata.passedCount}/{item.metadata.testCount} passed
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {item.description}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{formatTimestamp(item.timestamp)}</span>
-                          {item.metadata.stepCount && (
-                            <span>• {item.metadata.stepCount} steps</span>
-                          )}
-                          {item.metadata.testCaseCount && (
-                            <span>• {item.metadata.testCaseCount} test cases</span>
-                          )}
-                          {item.metadata.priority && (
-                            <Badge variant="outline" className="text-xs">
-                              {item.metadata.priority}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="text-center pt-4 border-t border-border">
-                    <Button variant="outline" size="sm" onClick={loadDashboardData}>
-                      <Loader2 className="h-3 w-3 mr-2" />
-                      Refresh Activity
-                    </Button>
-                  </div>
+              </div>
+            )}
+
+            {isWidgetEnabled('schedule') && (
+              <div className="relative">
+                {editMode && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 z-10 h-6 w-6 p-0 rounded-full"
+                    onClick={() => handleRemoveWidget('schedule')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                <div className="p-8 border-2 border-dashed border-muted-foreground/20 rounded-lg text-center text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="font-medium">Test Schedule Widget</p>
+                  <p className="text-sm">Coming soon</p>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <TestTube2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                  <p>No recent activity</p>
-                  <p className="text-sm">Start by creating test cases or connecting to GitHub</p>
+              </div>
+            )}
+
+            {isWidgetEnabled('performance') && (
+              <div className="relative">
+                {editMode && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 z-10 h-6 w-6 p-0 rounded-full"
+                    onClick={() => handleRemoveWidget('performance')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                <div className="p-8 border-2 border-dashed border-muted-foreground/20 rounded-lg text-center text-muted-foreground">
+                  <Monitor className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="font-medium">Performance Metrics Widget</p>
+                  <p className="text-sm">Coming soon</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
@@ -467,6 +397,12 @@ export default function Dashboard() {
       <CloneTestPlanModal
         open={showCloneModal}
         onOpenChange={setShowCloneModal}
+      />
+      <AddWidgetModal
+        open={showAddWidgetModal}
+        onOpenChange={setShowAddWidgetModal}
+        availableWidgets={getAvailableWidgets()}
+        onAddWidget={handleAddWidget}
       />
     </div>
   )

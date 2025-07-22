@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
 import { TestCase, TestPlan, TestRun } from './types'
+import { calculateTestCaseStatus } from './test-execution-utils'
 
 export class FileSystemError extends Error {
   constructor(message: string, public operation: string, public filePath?: string) {
@@ -323,12 +324,25 @@ export class FileUtils {
   static async saveTestRun(testRun: TestRun): Promise<void> {
     await this.ensureDirectories()
     
+    // Ensure consistent test result status calculation
+    const correctedTestRun = {
+      ...testRun,
+      results: testRun.results.map(result => {
+        // Recalculate status based on step results to ensure consistency
+        const calculatedStatus = calculateTestCaseStatus(result.steps || [])
+        return {
+          ...result,
+          status: calculatedStatus
+        }
+      })
+    }
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `${testRun.id}-${timestamp}.json`
     const filePath = path.join(this.resultsDir, filename)
     
     try {
-      const jsonContent = JSON.stringify(testRun, null, 2)
+      const jsonContent = JSON.stringify(correctedTestRun, null, 2)
       await fs.writeFile(filePath, jsonContent, 'utf-8')
     } catch (error) {
       throw new FileSystemError(
@@ -343,24 +357,76 @@ export class FileUtils {
     await this.ensureDirectories()
     
     try {
-      const files = await fs.readdir(this.resultsDir)
-      const testRunFiles = files.filter(file => file.endsWith('.json'))
-      
       const testRuns: TestRun[] = []
       
-      for (const file of testRunFiles) {
-        try {
-          const filePath = path.join(this.resultsDir, file)
-          const fileContent = await fs.readFile(filePath, 'utf-8')
-          const testRun = JSON.parse(fileContent) as TestRun
-          
-          if (testRun.id && testRun.testPlanId) {
-            testRuns.push(testRun)
+      // Load test runs from results directory (old format)
+      try {
+        const files = await fs.readdir(this.resultsDir)
+        const testRunFiles = files.filter(file => file.endsWith('.json'))
+        
+        for (const file of testRunFiles) {
+          try {
+            const filePath = path.join(this.resultsDir, file)
+            const fileContent = await fs.readFile(filePath, 'utf-8')
+            const testRun = JSON.parse(fileContent) as TestRun
+            
+            if (testRun.id && testRun.testPlanId) {
+              testRuns.push(testRun)
+            }
+          } catch (error) {
+            console.error(`Error loading test run ${file}:`, error)
+            // Continue with other files
           }
-        } catch (error) {
-          console.error(`Error loading test run ${file}:`, error)
-          // Continue with other files
         }
+      } catch (error) {
+        console.warn('Could not read results directory:', error)
+      }
+      
+      // Load test executions from test-executions directory (new format)
+      const testExecutionsDir = path.join(process.cwd(), 'test-executions')
+      try {
+        await fs.mkdir(testExecutionsDir, { recursive: true })
+        const execFiles = await fs.readdir(testExecutionsDir)
+        const testExecFiles = execFiles.filter(file => file.startsWith('execution-') && file.endsWith('.json'))
+        
+        for (const file of testExecFiles) {
+          try {
+            const filePath = path.join(testExecutionsDir, file)
+            const fileContent = await fs.readFile(filePath, 'utf-8')
+            const execution = JSON.parse(fileContent)
+            
+            // Convert TestExecution format to TestRun format
+            if (execution.id && execution.testCaseId) {
+              const convertedTestRun: TestRun = {
+                id: execution.id,
+                testPlanId: 'single-execution', // Mark as single execution
+                name: `Single Test Execution - ${execution.testCaseId}`,
+                startedAt: execution.startedAt,
+                completedAt: execution.completedAt,
+                status: execution.status === 'completed' ? 'completed' : execution.status,
+                executedBy: execution.executedBy,
+                results: [{
+                  testCaseId: execution.testCaseId,
+                  status: execution.overallResult,
+                  executedAt: execution.completedAt || execution.startedAt,
+                  steps: execution.stepResults.map((step: { stepId: string; status: string; actualResult?: string; notes?: string }) => ({
+                    stepId: step.stepId,
+                    status: step.status,
+                    actualResult: step.actualResult,
+                    notes: step.notes
+                  }))
+                }]
+              }
+              
+              testRuns.push(convertedTestRun)
+            }
+          } catch (error) {
+            console.error(`Error loading test execution ${file}:`, error)
+            // Continue with other files
+          }
+        }
+      } catch (error) {
+        console.warn('Could not read test-executions directory:', error)
       }
       
       return testRuns.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
@@ -419,14 +485,16 @@ export class FileUtils {
         this.getAllTestRuns()
       ])
 
-      // Calculate pass rate from test runs
+      // Calculate pass rate from test runs using proper step-based evaluation
       let totalTests = 0
       let passedTests = 0
 
       testRuns.forEach(run => {
         run.results.forEach(result => {
           totalTests++
-          if (result.status === 'pass') {
+          // Use proper test case status calculation based on step results
+          const actualStatus = calculateTestCaseStatus(result.steps || [])
+          if (actualStatus === 'pass') {
             passedTests++
           }
         })

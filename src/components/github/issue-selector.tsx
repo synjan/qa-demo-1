@@ -83,6 +83,8 @@ export function IssueSelector({
       }
 
       const [owner, repo] = repository.full_name.split('/')
+      console.log(`[Issue Filter Debug] Fetching ${stateFilter} issues for ${owner}/${repo}`)
+      
       const response = await fetch(
         `/api/github/issues?owner=${owner}&repo=${repo}&state=${stateFilter}`, 
         {
@@ -96,6 +98,7 @@ export function IssueSelector({
       }
 
       const data = await response.json()
+      console.log(`[Issue Filter Debug] Received ${data.length} ${stateFilter} issues`)
       setIssues(data)
     } catch (err) {
       console.error('Error fetching issues:', err)
@@ -287,7 +290,10 @@ export function IssueSelector({
               disabled={disabled || loading}
             />
           </div>
-          <Select value={stateFilter} onValueChange={(value: any) => setStateFilter(value)}>
+          <Select value={stateFilter} onValueChange={(value: 'all' | 'open' | 'closed') => {
+            console.log(`[Issue Filter Debug] State filter changed from ${stateFilter} to ${value}`)
+            setStateFilter(value)
+          }}>
             <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
@@ -330,7 +336,7 @@ export function IssueSelector({
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <Select value={sortBy} onValueChange={(value: 'created' | 'updated' | 'comments') => setSortBy(value)}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>

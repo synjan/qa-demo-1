@@ -31,7 +31,12 @@ export class GitHubService {
         avatar_url: repo.owner.avatar_url
       },
       description: repo.description,
-      html_url: repo.html_url
+      html_url: repo.html_url,
+      updated_at: repo.updated_at,
+      stargazers_count: repo.stargazers_count || 0,
+      forks_count: repo.forks_count || 0,
+      open_issues_count: repo.open_issues_count || 0,
+      has_issues: repo.has_issues
     }))
   }
 
@@ -59,6 +64,11 @@ export class GitHubService {
         login: issue.user?.login || '',
         avatar_url: issue.user?.avatar_url || ''
       },
+      assignee: issue.assignee ? {
+        login: issue.assignee.login,
+        avatar_url: issue.assignee.avatar_url
+      } : null,
+      comments: issue.comments || 0,
       created_at: issue.created_at,
       updated_at: issue.updated_at,
       html_url: issue.html_url
@@ -88,6 +98,11 @@ export class GitHubService {
         login: data.user?.login || '',
         avatar_url: data.user?.avatar_url || ''
       },
+      assignee: data.assignee ? {
+        login: data.assignee.login,
+        avatar_url: data.assignee.avatar_url
+      } : null,
+      comments: data.comments || 0,
       created_at: data.created_at,
       updated_at: data.updated_at,
       html_url: data.html_url

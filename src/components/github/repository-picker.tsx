@@ -102,7 +102,13 @@ export function RepositoryPicker({
         case 'name':
           return a.name.localeCompare(b.name)
         case 'updated_at':
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          const dateA = new Date(a.updated_at).getTime()
+          const dateB = new Date(b.updated_at).getTime()
+          // Handle invalid dates by putting them at the end
+          if (isNaN(dateA) && isNaN(dateB)) return 0
+          if (isNaN(dateA)) return 1
+          if (isNaN(dateB)) return -1
+          return dateB - dateA
         case 'stars':
           return b.stargazers_count - a.stargazers_count
         case 'forks':
@@ -131,11 +137,25 @@ export function RepositoryPicker({
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
+    if (!dateString) {
+      return 'Unknown'
+    }
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Unknown'
+      }
+      
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    } catch (error) {
+      console.warn('Error formatting date:', dateString, error)
+      return 'Unknown'
+    }
   }
 
   if (error) {

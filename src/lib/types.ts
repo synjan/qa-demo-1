@@ -14,6 +14,11 @@ export interface GitHubIssue {
     login: string
     avatar_url: string
   }
+  assignee?: {
+    login: string
+    avatar_url: string
+  } | null
+  comments: number
   created_at: string
   updated_at: string
   html_url: string
@@ -30,6 +35,11 @@ export interface GitHubRepository {
   }
   description: string | null
   html_url: string
+  updated_at: string
+  stargazers_count: number
+  forks_count: number
+  open_issues_count: number
+  has_issues: boolean
 }
 
 export interface TestCase {

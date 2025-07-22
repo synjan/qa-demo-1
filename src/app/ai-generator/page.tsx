@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { 
   Sparkles, 
   Loader2, 
@@ -20,7 +21,8 @@ import {
   Settings,
   ExternalLink,
   GitBranch,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react'
 import { TestCase, GitHubRepository, GitHubIssue } from '@/lib/types'
 import { BilingualService, Language } from '@/lib/language-service'
@@ -28,6 +30,7 @@ import { ProgressIndicator } from '@/components/ui/progress-indicator'
 import { useAIStreaming } from '@/hooks/use-ai-streaming'
 import { RepositoryPicker } from '@/components/github/repository-picker'
 import { IssueSelector } from '@/components/github/issue-selector'
+import { Navigation } from '@/components/layout/navigation'
 
 interface AIGeneratorSettings {
   interfaceLanguage: Language
@@ -65,6 +68,10 @@ export default function AIGenerator() {
   
   // Local test count override
   const [localTestCount, setLocalTestCount] = useState<number | null>(null)
+  
+  // Prompt preview state
+  const [showPromptPreview, setShowPromptPreview] = useState(false)
+  const [promptPreview, setPromptPreview] = useState<{ system: string, user: string } | null>(null)
 
   const loadSettings = useCallback((service?: BilingualService, initialLang?: Language) => {
     if (typeof window !== 'undefined') {
@@ -400,6 +407,101 @@ ${testCase.expectedResult}`
 
   const t = useCallback((key: string) => languageService?.t(key) || key, [languageService])
 
+  const generatePromptPreview = useCallback(() => {
+    if (!settings) return
+    
+    let systemPrompt = ''
+    let userPrompt = ''
+    
+    if (inputMode === 'text') {
+      // Text input mode
+      const templateId = settings.selectedTemplate || 'default'
+      const language = settings.generationLanguage || 'en'
+      const testCount = localTestCount ?? settings.testCount ?? 5
+      
+      // Get system prompt from template service
+      systemPrompt = `You are a QA expert that creates comprehensive manual test cases for software features. 
+Generate structured test cases that are clear, actionable, and thorough.
+Return your response as valid JSON matching this exact structure:
+[
+  {
+    "title": "string",
+    "description": "string", 
+    "preconditions": "string",
+    "steps": [
+      {
+        "stepNumber": number,
+        "action": "string",
+        "expectedResult": "string"
+      }
+    ],
+    "expectedResult": "string",
+    "priority": "low" | "medium" | "high" | "critical",
+    "tags": ["string"]
+  }
+]`
+      
+      userPrompt = `Based on the following description, generate ${testCount} comprehensive manual test cases.
+
+Description: "${inputText.trim()}"
+
+Generate ${testCount} test cases that focus on functional testing, edge cases, and user experience validation.
+
+RESPOND ONLY IN JSON FORMAT - START WITH [ AND END WITH ]`
+      
+    } else if (inputMode === 'github' && selectedRepository && selectedIssues.length > 0) {
+      // GitHub issues mode
+      systemPrompt = `You are a QA expert that creates comprehensive manual test cases for software features. 
+Generate structured test cases that are clear, actionable, and thorough.
+Return your response as valid JSON matching this exact structure:
+{
+  "title": "string",
+  "description": "string", 
+  "preconditions": "string",
+  "steps": [
+    {
+      "stepNumber": number,
+      "action": "string",
+      "expectedResult": "string"
+    }
+  ],
+  "expectedResult": "string",
+  "priority": "low" | "medium" | "high" | "critical",
+  "tags": ["string"]
+}`
+
+      const issuesText = selectedIssues.map(issue => `
+**Issue Title:** ${issue.title}
+
+**Issue Description:**
+${issue.body || 'No description provided'}
+
+**Labels:** ${issue.labels.map(l => l.name).join(', ') || 'None'}
+
+**Issue URL:** ${issue.html_url}
+`).join('\n---\n')
+      
+      userPrompt = `Create a comprehensive manual test case for the following GitHub issue:
+
+${issuesText}
+
+Please generate a detailed manual test case that covers:
+1. Clear preconditions and setup steps
+2. Step-by-step testing procedures 
+3. Expected results for each step
+4. Overall expected outcome
+5. Appropriate priority level based on the issue
+6. Relevant tags for categorization
+
+Focus on creating actionable test steps that a manual tester can follow to verify the feature or bug fix described in the issue. Include edge cases and negative testing scenarios where appropriate.
+
+Consider the issue type (bug, feature, enhancement) when determining test coverage and priority.`
+    }
+    
+    setPromptPreview({ system: systemPrompt, user: userPrompt })
+    setShowPromptPreview(true)
+  }, [settings, inputMode, inputText, selectedRepository, selectedIssues, localTestCount])
+
   const generationOptions = useMemo(() => {
     return settings ? {
       templateId: settings.selectedTemplate,
@@ -474,7 +576,9 @@ ${testCase.expectedResult}`
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-between">
@@ -744,6 +848,20 @@ ${testCase.expectedResult}`
                 </>
               )}
             </Button>
+            
+            <Button
+              variant="outline"
+              onClick={generatePromptPreview}
+              disabled={
+                loading || streaming.isStreaming || 
+                (inputMode === 'text' && !inputText.trim()) ||
+                (inputMode === 'github' && (!selectedRepository || selectedIssues.length === 0))
+              }
+              size="lg"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              {currentLang === 'en' ? 'Preview Prompt' : 'Forhåndsvis Prompt'}
+            </Button>
           </div>
 
           {/* Progress Indicator for Streaming Mode */}
@@ -928,6 +1046,78 @@ ${testCase.expectedResult}`
           </p>
         </Card>
       )}
+
+      {/* Prompt Preview Dialog */}
+      <Dialog open={showPromptPreview} onOpenChange={setShowPromptPreview}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              {currentLang === 'en' ? 'AI Prompt Preview' : 'AI Prompt Forhåndsvisning'}
+            </DialogTitle>
+            <DialogDescription>
+              {currentLang === 'en' 
+                ? 'This shows the exact prompts that will be sent to the AI to generate your test cases. Review for completeness and accuracy.'
+                : 'Dette viser de nøyaktige promptene som vil bli sendt til AI for å generere testtilfellene dine. Gjennomgå for fullstendighet og nøyaktighet.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {promptPreview && (
+            <div className="space-y-6">
+              {/* System Prompt Section */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {currentLang === 'en' ? 'System Prompt' : 'System Prompt'}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {currentLang === 'en' ? 'Instructions for AI behavior and response format' : 'Instruksjoner for AI-oppførsel og responsformat'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 border rounded-lg p-4 overflow-auto">
+                  <pre className="text-sm whitespace-pre-wrap font-mono">{promptPreview.system}</pre>
+                </div>
+              </div>
+
+              {/* User Prompt Section */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {currentLang === 'en' ? 'User Prompt' : 'Bruker Prompt'}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {currentLang === 'en' ? 'Your input and specific requirements' : 'Din input og spesifikke krav'}
+                  </span>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 overflow-auto">
+                  <pre className="text-sm whitespace-pre-wrap font-mono">{promptPreview.user}</pre>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(`System Prompt:\n${promptPreview.system}\n\nUser Prompt:\n${promptPreview.user}`)}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  {currentLang === 'en' ? 'Copy Prompts' : 'Kopier Prompts'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPromptPreview(false)}
+                >
+                  {currentLang === 'en' ? 'Close' : 'Lukk'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
     </div>
   )
 }

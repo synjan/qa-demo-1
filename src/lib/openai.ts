@@ -216,7 +216,20 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
 
         // Extract JSON from the response (handle markdown code blocks)
         const cleanedResponse = this.extractJsonFromResponse(response)
-        console.log('Cleaned response:', cleanedResponse)
+        console.log('Cleaned response preview:', cleanedResponse.substring(0, 300))
+
+        // Pre-validate JSON format before parsing
+        const jsonValidation = this.validateJsonFormat(cleanedResponse)
+        if (!jsonValidation.isValid) {
+          console.error(`Attempt ${attempt + 1} JSON format validation failed:`, jsonValidation.error)
+          console.error('Invalid JSON preview:', cleanedResponse.substring(0, 200))
+          
+          if (attempt < maxRetries - 1) {
+            lastError = new Error(`JSON format invalid: ${jsonValidation.error}`)
+            console.log(`Retrying with stricter prompt (attempt ${attempt + 2}/${maxRetries})`)
+            continue
+          }
+        }
 
         let generatedData
         try {
@@ -495,6 +508,78 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
   }
 
   /**
+   * Validate JSON format before attempting to parse
+   */
+  private validateJsonFormat(jsonString: string): { isValid: boolean; error?: string } {
+    try {
+      // Basic structural checks
+      const trimmed = jsonString.trim()
+      
+      if (!trimmed) {
+        return { isValid: false, error: 'Empty JSON string' }
+      }
+      
+      // Check for basic JSON structure
+      const firstChar = trimmed[0]
+      const lastChar = trimmed[trimmed.length - 1]
+      
+      if (firstChar !== '[' && firstChar !== '{') {
+        return { isValid: false, error: `JSON must start with [ or {, found: ${firstChar}` }
+      }
+      
+      if ((firstChar === '[' && lastChar !== ']') || (firstChar === '{' && lastChar !== '}')) {
+        return { isValid: false, error: `Mismatched brackets: starts with ${firstChar} but ends with ${lastChar}` }
+      }
+      
+      // Check for common JSON issues
+      if (trimmed.includes('...') || trimmed.includes('[truncated]') || trimmed.includes('(continued)')) {
+        return { isValid: false, error: 'JSON appears to be truncated or incomplete' }
+      }
+      
+      // Check for unterminated strings (common cause of parsing errors)
+      let inString = false
+      let escapeNext = false
+      let stringCount = 0
+      
+      for (let i = 0; i < trimmed.length; i++) {
+        const char = trimmed[i]
+        
+        if (escapeNext) {
+          escapeNext = false
+          continue
+        }
+        
+        if (char === '\\') {
+          escapeNext = true
+          continue
+        }
+        
+        if (char === '"') {
+          inString = !inString
+          if (inString) {
+            stringCount++
+          }
+        }
+      }
+      
+      if (inString) {
+        return { isValid: false, error: 'Unterminated string detected' }
+      }
+      
+      // Test parse with native JSON to catch other issues
+      JSON.parse(trimmed)
+      
+      return { isValid: true }
+      
+    } catch (error) {
+      return { 
+        isValid: false, 
+        error: `JSON validation error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      }
+    }
+  }
+
+  /**
    * Extract JSON content from AI response, handling various formats
    * including markdown code blocks and extra text
    */
@@ -502,26 +587,111 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
     // Remove leading/trailing whitespace
     let cleaned = response.trim()
     
+    console.log('[JSON Extraction Debug] Original response length:', response.length)
+    console.log('[JSON Extraction Debug] First 200 chars:', response.substring(0, 200))
+    
     // Check if response is wrapped in markdown code blocks
     const codeBlockMatch = cleaned.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/)
     if (codeBlockMatch) {
+      console.log('[JSON Extraction Debug] Found markdown code block')
       return codeBlockMatch[1].trim()
     }
     
-    // Look for JSON array starting with [ and ending with ]
-    const jsonArrayMatch = cleaned.match(/(\[[\s\S]*\])/)
-    if (jsonArrayMatch) {
-      return jsonArrayMatch[1].trim()
+    // More robust JSON array extraction - handle nested brackets
+    const jsonStart = cleaned.indexOf('[')
+    if (jsonStart !== -1) {
+      let bracketCount = 0
+      let inString = false
+      let escapeNext = false
+      let jsonEnd = -1
+      
+      for (let i = jsonStart; i < cleaned.length; i++) {
+        const char = cleaned[i]
+        
+        if (escapeNext) {
+          escapeNext = false
+          continue
+        }
+        
+        if (char === '\\') {
+          escapeNext = true
+          continue
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString
+          continue
+        }
+        
+        if (!inString) {
+          if (char === '[') {
+            bracketCount++
+          } else if (char === ']') {
+            bracketCount--
+            if (bracketCount === 0) {
+              jsonEnd = i
+              break
+            }
+          }
+        }
+      }
+      
+      if (jsonEnd !== -1) {
+        const extractedJson = cleaned.substring(jsonStart, jsonEnd + 1)
+        console.log('[JSON Extraction Debug] Extracted JSON array, length:', extractedJson.length)
+        return extractedJson.trim()
+      }
     }
     
     // Look for JSON object starting with { and ending with }
-    const jsonObjectMatch = cleaned.match(/(\{[\s\S]*\})/)
-    if (jsonObjectMatch) {
-      return jsonObjectMatch[1].trim()
+    const jsonObjectStart = cleaned.indexOf('{')
+    if (jsonObjectStart !== -1) {
+      let braceCount = 0
+      let inString = false
+      let escapeNext = false
+      let jsonEnd = -1
+      
+      for (let i = jsonObjectStart; i < cleaned.length; i++) {
+        const char = cleaned[i]
+        
+        if (escapeNext) {
+          escapeNext = false
+          continue
+        }
+        
+        if (char === '\\') {
+          escapeNext = true
+          continue
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString
+          continue
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            braceCount++
+          } else if (char === '}') {
+            braceCount--
+            if (braceCount === 0) {
+              jsonEnd = i
+              break
+            }
+          }
+        }
+      }
+      
+      if (jsonEnd !== -1) {
+        const extractedJson = cleaned.substring(jsonObjectStart, jsonEnd + 1)
+        console.log('[JSON Extraction Debug] Extracted JSON object, length:', extractedJson.length)
+        return extractedJson.trim()
+      }
     }
     
     // If no patterns match, return the original response
     // This will likely fail JSON parsing, but we'll get better error messages
+    console.log('[JSON Extraction Debug] No JSON structure found, returning original')
     return cleaned
   }
 

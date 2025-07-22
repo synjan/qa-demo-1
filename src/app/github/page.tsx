@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { GitBranch, Search, Filter, Loader2, Plus, ExternalLink } from 'lucide-react'
+import { GitBranch, Search, Filter, Loader2, Plus, ExternalLink, Star, StarOff } from 'lucide-react'
 import { GitHubRepository, GitHubIssue } from '@/lib/types'
 import { getGitHubToken } from '@/lib/auth'
+import { UserPreferencesManager } from '@/lib/user-preferences'
 
 export default function GitHubBrowser() {
   const { data: session, status } = useSession()
@@ -33,6 +34,10 @@ export default function GitHubBrowser() {
   const [searchQuery, setSearchQuery] = useState('')
   const [issueState, setIssueState] = useState<'open' | 'closed' | 'all'>('open')
   const [selectedLabels, setSelectedLabels] = useState<string[]>([])
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  
+  // Favorites state
+  const [favoriteRepositories, setFavoriteRepositories] = useState<string[]>([])
   
   // Error handling
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +53,12 @@ export default function GitHubBrowser() {
       }
     }
   }, [session, status, router])
+
+  // Load favorites on component mount
+  useEffect(() => {
+    const preferences = UserPreferencesManager.getUserPreferences()
+    setFavoriteRepositories(preferences.github.favoriteRepositories)
+  }, [])
 
   // Fetch repositories on component mount
   useEffect(() => {
@@ -145,6 +156,56 @@ export default function GitHubBrowser() {
     }
   }
 
+  const handleToggleFavorite = (repo: GitHubRepository) => {
+    const repoFullName = repo.full_name
+    const isCurrentlyFavorite = favoriteRepositories.includes(repoFullName)
+    
+    let updatedFavorites: string[]
+    if (isCurrentlyFavorite) {
+      updatedFavorites = favoriteRepositories.filter(name => name !== repoFullName)
+    } else {
+      updatedFavorites = [...favoriteRepositories, repoFullName]
+    }
+    
+    setFavoriteRepositories(updatedFavorites)
+    
+    // Update user preferences
+    UserPreferencesManager.updatePreferences({
+      github: {
+        favoriteRepositories: updatedFavorites
+      }
+    })
+  }
+
+  const getFilteredRepositories = () => {
+    let filtered = repositories
+    
+    // Filter by favorites if toggle is on
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(repo => favoriteRepositories.includes(repo.full_name))
+    }
+    
+    return filtered
+  }
+
+  const getSortedRepositories = () => {
+    const filtered = getFilteredRepositories()
+    
+    // Sort favorites to the top when not filtering by favorites only
+    if (!showFavoritesOnly) {
+      return filtered.sort((a, b) => {
+        const aIsFavorite = favoriteRepositories.includes(a.full_name)
+        const bIsFavorite = favoriteRepositories.includes(b.full_name)
+        
+        if (aIsFavorite && !bIsFavorite) return -1
+        if (!aIsFavorite && bIsFavorite) return 1
+        return 0
+      })
+    }
+    
+    return filtered
+  }
+
   const generateTestCases = async () => {
     if (!selectedRepo || selectedIssues.size === 0) return
     
@@ -202,6 +263,8 @@ export default function GitHubBrowser() {
   }
 
   const filteredIssues = getFilteredIssues()
+  const sortedRepositories = getSortedRepositories()
+  const favoriteCount = favoriteRepositories.length
 
   if (status === 'loading') {
     return (
@@ -235,13 +298,30 @@ export default function GitHubBrowser() {
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <GitBranch className="h-5 w-5 mr-2" />
-                    Repositories
-                  </CardTitle>
-                  <CardDescription>
-                    Select a repository to view its issues
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center">
+                        <GitBranch className="h-5 w-5 mr-2" />
+                        Repositories
+                      </CardTitle>
+                      <CardDescription>
+                        {showFavoritesOnly 
+                          ? `Showing ${favoriteCount} favorite repositories`
+                          : `Select a repository to view its issues (${favoriteCount} favorites)`
+                        }
+                      </CardDescription>
+                    </div>
+                    {favoriteCount > 0 && (
+                      <Button
+                        variant={showFavoritesOnly ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                      >
+                        <Star className="h-3 w-3 mr-2" />
+                        {showFavoritesOnly ? 'Show All' : 'Favorites Only'}
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {loadingRepos ? (
@@ -249,40 +329,87 @@ export default function GitHubBrowser() {
                       <Loader2 className="h-6 w-6 animate-spin" />
                       <span className="ml-2">Loading repositories...</span>
                     </div>
+                  ) : sortedRepositories.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <p>
+                        {showFavoritesOnly 
+                          ? 'No favorite repositories yet'
+                          : 'No repositories found'
+                        }
+                      </p>
+                      {showFavoritesOnly && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setShowFavoritesOnly(false)}
+                        >
+                          Show All Repositories
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <div className="space-y-3">
-                      {repositories.map(repo => (
-                        <div
-                          key={repo.id}
-                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                            selectedRepo?.id === repo.id
-                              ? 'bg-primary/5 border-primary shadow-md'
-                              : 'bg-card border-border hover:bg-accent hover:border-accent-foreground hover:shadow-sm'
-                          }`}
-                          onClick={() => handleRepositorySelect(repo)}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-foreground truncate">
-                                {repo.name}
+                      {sortedRepositories.map(repo => {
+                        const isFavorite = favoriteRepositories.includes(repo.full_name)
+                        
+                        return (
+                          <div
+                            key={repo.id}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 relative ${
+                              selectedRepo?.id === repo.id
+                                ? 'bg-primary/5 border-primary shadow-md'
+                                : 'bg-card border-border hover:bg-accent hover:border-accent-foreground hover:shadow-sm'
+                            }`}
+                          >
+                            {/* Star button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-background/80"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleFavorite(repo)
+                              }}
+                            >
+                              {isFavorite ? (
+                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                              ) : (
+                                <StarOff className="h-3 w-3 text-muted-foreground hover:text-yellow-500" />
+                              )}
+                            </Button>
+                            
+                            <div onClick={() => handleRepositorySelect(repo)}>
+                              <div className="flex items-start justify-between pr-8">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    {isFavorite && (
+                                      <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                    )}
+                                    <div className="font-semibold text-sm text-foreground truncate">
+                                      {repo.name}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {repo.owner.login}
+                                  </div>
+                                </div>
+                                {repo.private && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">
+                                    Private
+                                  </Badge>
+                                )}
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {repo.owner.login}
-                              </div>
+                              {repo.description && (
+                                <div className="text-sm text-muted-foreground mt-3 line-clamp-2">
+                                  {repo.description}
+                                </div>
+                              )}
                             </div>
-                            {repo.private && (
-                              <Badge variant="secondary" className="ml-2 text-xs">
-                                Private
-                              </Badge>
-                            )}
                           </div>
-                          {repo.description && (
-                            <div className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                              {repo.description}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </CardContent>
