@@ -6,6 +6,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart
+} from 'recharts'
 import { 
   TestTube2, 
   Play, 
@@ -16,7 +40,10 @@ import {
   FolderOpen,
   Search,
   Filter,
-  History
+  History,
+  Calendar,
+  TrendingUp,
+  Activity
 } from 'lucide-react'
 import { getGuestSession } from '@/lib/guest-auth'
 
@@ -58,6 +85,24 @@ export default function TestRunnerDashboard() {
     blocked: 0
   })
   const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState('last7days')
+  
+  // Mock data for charts
+  const [executionTrend, setExecutionTrend] = useState([
+    { date: '07-17', passed: 12, failed: 2 },
+    { date: '07-18', passed: 15, failed: 1 },
+    { date: '07-19', passed: 18, failed: 3 },
+    { date: '07-20', passed: 22, failed: 2 },
+    { date: '07-21', passed: 20, failed: 4 },
+    { date: '07-22', passed: 25, failed: 1 },
+    { date: '07-23', passed: 6, failed: 1 },
+  ])
+  
+  const testTypeDistribution = [
+    { name: 'UI Tests', value: 45, color: '#3b82f6' },
+    { name: 'API Tests', value: 30, color: '#10b981' },
+    { name: 'Integration', value: 25, color: '#f59e0b' },
+  ]
 
   useEffect(() => {
     const session = getGuestSession()
@@ -153,6 +198,23 @@ export default function TestRunnerDashboard() {
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+        <Select value={dateRange} onValueChange={setDateRange}>
+          <SelectTrigger className="w-[180px]">
+            <Calendar className="h-4 w-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="last7days">Last 7 Days</SelectItem>
+            <SelectItem value="last30days">Last 30 Days</SelectItem>
+            <SelectItem value="last90days">Last 90 Days</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -228,6 +290,67 @@ export default function TestRunnerDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Execution Trend</CardTitle>
+                <CardDescription>Daily test execution results</CardDescription>
+              </div>
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={executionTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="passed" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="failed" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Test Type Distribution</CardTitle>
+                <CardDescription>Breakdown by test category</CardDescription>
+              </div>
+              <Activity className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={testTypeDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {testTypeDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Test Access */}

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { 
   Select,
   SelectContent,
@@ -13,6 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TestCardSkeleton, TableRowSkeleton } from '@/components/ui/loading-skeletons'
 import { 
   TestTube2, 
   Play, 
@@ -20,7 +24,14 @@ import {
   Filter, 
   Clock,
   ArrowUpDown,
-  Eye
+  Eye,
+  Grid3X3,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen,
+  Trash2,
+  CheckSquare
 } from 'lucide-react'
 
 interface TestCase {
@@ -44,6 +55,10 @@ export default function BrowseTests() {
   const [tagFilter, setTagFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('updated')
   const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set())
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12
 
   useEffect(() => {
     loadTestCases()
@@ -105,7 +120,46 @@ export default function BrowseTests() {
     })
 
     setFilteredTests(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
   }
+
+  const toggleTestSelection = (testId: string) => {
+    const newSelected = new Set(selectedTests)
+    if (newSelected.has(testId)) {
+      newSelected.delete(testId)
+    } else {
+      newSelected.add(testId)
+    }
+    setSelectedTests(newSelected)
+  }
+
+  const selectAllVisible = () => {
+    const visibleTestIds = paginatedTests.map(test => test.id)
+    const newSelected = new Set(selectedTests)
+    visibleTestIds.forEach(id => newSelected.add(id))
+    setSelectedTests(newSelected)
+  }
+
+  const deselectAll = () => {
+    setSelectedTests(new Set())
+  }
+
+  const bulkAddToTestPlan = () => {
+    // TODO: Implement bulk add to test plan
+    console.log('Adding tests to plan:', Array.from(selectedTests))
+  }
+
+  const bulkDelete = () => {
+    // TODO: Implement bulk delete
+    console.log('Deleting tests:', Array.from(selectedTests))
+  }
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTests.length / itemsPerPage)
+  const paginatedTests = filteredTests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -123,10 +177,34 @@ export default function BrowseTests() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center">
-          <TestTube2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading test cases...</p>
+      <div className="container mx-auto py-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Browse Test Cases</h1>
+          <p className="text-muted-foreground mt-2">
+            Search, filter, and execute available test cases
+          </p>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters & Search
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TestCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     )
@@ -145,10 +223,24 @@ export default function BrowseTests() {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters & Search
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'grid' | 'list')}>
+                <TabsList>
+                  <TabsTrigger value="grid">
+                    <Grid3X3 className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger value="list">
+                    <List className="h-4 w-4" />
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -204,30 +296,84 @@ export default function BrowseTests() {
           
           <div className="flex justify-between items-center mt-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredTests.length} of {testCases.length} test cases
+              Showing {paginatedTests.length} of {filteredTests.length} test cases
+              {selectedTests.size > 0 && ` (${selectedTests.size} selected)`}
             </p>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setSearchTerm('')
-                setPriorityFilter('all')
-                setTagFilter('all')
-                setSortBy('updated')
-              }}
-            >
-              Clear Filters
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedTests.size > 0 && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={bulkAddToTestPlan}
+                  >
+                    <FolderOpen className="h-4 w-4 mr-1" />
+                    Add to Plan
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={deselectAll}
+                  >
+                    Deselect All
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('')
+                  setPriorityFilter('all')
+                  setTagFilter('all')
+                  setSortBy('updated')
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Test Cases Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredTests.length > 0 ? (
-          filteredTests.map((testCase) => (
-            <Card key={testCase.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
+      {/* Bulk Actions Bar */}
+      {selectedTests.size > 0 && (
+        <Card className="p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5 text-blue-600" />
+              <span className="font-medium">{selectedTests.size} test(s) selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={selectAllVisible}>
+                Select All Visible
+              </Button>
+              <Button size="sm" variant="outline" onClick={bulkAddToTestPlan}>
+                <FolderOpen className="h-4 w-4 mr-1" />
+                Add to Test Plan
+              </Button>
+              <Button size="sm" variant="destructive" onClick={bulkDelete}>
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Test Cases Grid/List */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {paginatedTests.length > 0 ? (
+            paginatedTests.map((testCase) => (
+            <Card key={testCase.id} className="hover:shadow-md transition-shadow relative">
+              <div className="absolute top-4 left-4 z-10">
+                <Checkbox
+                  checked={selectedTests.has(testCase.id)}
+                  onCheckedChange={() => toggleTestSelection(testCase.id)}
+                />
+              </div>
+              <CardHeader className="pb-3 pl-12">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2 line-clamp-2">
@@ -303,13 +449,157 @@ export default function BrowseTests() {
           </div>
         )}
       </div>
+      ) : (
+        /* List View */
+        <div className="space-y-2">
+          {paginatedTests.length > 0 ? (
+            <Card>
+              <table className="w-full">
+                <thead className="border-b">
+                  <tr className="text-left">
+                    <th className="p-4 w-12">
+                      <Checkbox
+                        checked={paginatedTests.every(test => selectedTests.has(test.id))}
+                        onCheckedChange={(checked) => {
+                          if (checked) selectAllVisible()
+                          else deselectAll()
+                        }}
+                      />
+                    </th>
+                    <th className="p-4 font-medium">Test Case</th>
+                    <th className="p-4 font-medium">Priority</th>
+                    <th className="p-4 font-medium">Steps</th>
+                    <th className="p-4 font-medium">Updated</th>
+                    <th className="p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTests.map((testCase) => (
+                    <tr key={testCase.id} className="border-b hover:bg-accent/50 transition-colors">
+                      <td className="p-4">
+                        <Checkbox
+                          checked={selectedTests.has(testCase.id)}
+                          onCheckedChange={() => toggleTestSelection(testCase.id)}
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="font-medium">{testCase.title}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {testCase.description}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge className={`${getPriorityColor(testCase.priority)} text-white text-xs`}>
+                          {testCase.priority}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">
+                        {testCase.steps.length} steps
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">
+                        {formatDate(testCase.updatedAt)}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => router.push(`/test-runner/execute/${testCase.id}`)}
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => router.push(`/test-runner/view/${testCase.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ) : (
+            <Card className="p-12 text-center">
+              <TestTube2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No test cases found</h3>
+              <p className="text-muted-foreground">
+                {testCases.length === 0 
+                  ? "No test cases are available."
+                  : "Try adjusting your search filters to find test cases."
+                }
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
 
-      {/* Load More / Pagination could go here */}
-      {filteredTests.length > 20 && (
-        <div className="text-center">
-          <Button variant="outline">
-            Load More Test Cases
-          </Button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = i + 1
+              if (totalPages <= 5) {
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              }
+              // Show first, last, and surrounding pages
+              if (pageNum === 1 || pageNum === totalPages || 
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              }
+              if (pageNum === 2 && currentPage > 3) {
+                return <span key={pageNum} className="px-2">...</span>
+              }
+              if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
+                return <span key={pageNum} className="px-2">...</span>
+              }
+              return null
+            })}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

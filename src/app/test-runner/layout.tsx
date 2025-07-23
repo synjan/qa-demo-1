@@ -12,6 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { CommandPalette } from '@/components/ui/command-palette'
+import { KeyboardShortcutsDialog } from '@/components/ui/keyboard-shortcuts'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { 
   TestTube2, 
   BarChart3, 
@@ -70,9 +73,11 @@ export default function TestRunnerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="bg-card shadow-sm border-b border-border">
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        <KeyboardShortcutsDialog />
+        {/* Navigation */}
+        <nav className="bg-card shadow-sm border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -105,6 +110,7 @@ export default function TestRunnerLayout({
             </div>
             
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+              <CommandPalette />
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -223,6 +229,7 @@ export default function TestRunnerLayout({
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

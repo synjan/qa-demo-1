@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,14 +26,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 
-const navigation = [
+const navigation: Array<{
+  name: string
+  href: string
+  icon: any
+  beta?: boolean
+}> = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
   { name: 'Test Cases', href: '/testcases', icon: TestTube2 },
   { name: 'Test Plans', href: '/testplans', icon: FolderOpen },
   { name: 'AI Generator', href: '/ai-generator', icon: Sparkles },
   { name: 'GitHub Issues', href: '/github', icon: GitBranch },
+  { name: 'Repository Scanner', href: '/scanner', icon: Search, beta: true },
 ]
 
 export function Navigation() {
@@ -81,6 +89,11 @@ export function Navigation() {
                   >
                     <item.icon className="h-4 w-4 mr-2" />
                     {item.name}
+                    {item.beta && (
+                      <Badge variant="secondary" className="ml-2 text-xs px-1.5 py-0">
+                        Beta
+                      </Badge>
+                    )}
                   </Link>
                 )
               })}
@@ -159,6 +172,11 @@ export function Navigation() {
                   <div className="flex items-center">
                     <item.icon className="h-4 w-4 mr-2" />
                     {item.name}
+                    {item.beta && (
+                      <Badge variant="secondary" className="ml-2 text-xs px-1.5 py-0">
+                        Beta
+                      </Badge>
+                    )}
                   </div>
                 </Link>
               )

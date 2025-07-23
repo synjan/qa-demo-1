@@ -1,0 +1,63 @@
+{
+  "testCaseId": "c755ebd9-70fe-4eb1-b057-161a5d26080f",
+  "executedBy": "Test User",
+  "startedAt": "2025-07-23T11:15:12.236Z",
+  "status": "completed",
+  "overallResult": "pass",
+  "stepResults": [
+    {
+      "stepId": "step-1",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:16.987Z"
+    },
+    {
+      "stepId": "step-2",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:18.611Z"
+    },
+    {
+      "stepId": "step-3",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:19.454Z"
+    },
+    {
+      "stepId": "step-4",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:20.211Z"
+    },
+    {
+      "stepId": "step-5",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:21.024Z"
+    },
+    {
+      "stepId": "step-6",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:21.786Z"
+    },
+    {
+      "stepId": "step-7",
+      "status": "pass",
+      "notes": "",
+      "actualResult": "",
+      "timestamp": "2025-07-23T11:15:25.475Z"
+    }
+  ],
+  "notes": "",
+  "completedAt": "2025-07-23T11:15:36.908Z",
+  "id": "07b90b17-368f-4072-91e7-9c202bb1ea52",
+  "savedAt": "2025-07-23T11:15:37.058Z",
+  "source": "test-runner"
+}

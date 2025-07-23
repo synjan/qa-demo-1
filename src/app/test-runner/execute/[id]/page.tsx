@@ -1,12 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { 
   CheckCircle, 
   XCircle, 
@@ -16,7 +30,12 @@ import {
   ArrowRight,
   SkipForward,
   Save,
-  Play
+  Play,
+  Timer,
+  Pause,
+  RotateCcw,
+  Camera,
+  Paperclip
 } from 'lucide-react'
 import { getGuestSession } from '@/lib/guest-auth'
 
@@ -69,11 +88,83 @@ export default function ExecuteTest() {
   const [overallNotes, setOverallNotes] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [stepStartTime, setStepStartTime] = useState<Date | null>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     loadTestCase()
     initializeExecution()
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
   }, [testCaseId])
+
+  useEffect(() => {
+    if (isTimerRunning) {
+      timerRef.current = setInterval(() => {
+        setElapsedTime(prev => prev + 1)
+      }, 1000)
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [isTimerRunning])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in textarea
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
+        return
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'p':
+          e.preventDefault()
+          updateStepResult('pass')
+          break
+        case 'f':
+          e.preventDefault()
+          updateStepResult('fail')
+          break
+        case 'b':
+          e.preventDefault()
+          updateStepResult('blocked')
+          break
+        case 's':
+          if (!e.metaKey && !e.ctrlKey) {
+            e.preventDefault()
+            updateStepResult('skipped')
+          }
+          break
+        case 'arrowright':
+          e.preventDefault()
+          if (currentStepIndex < (testCase?.steps.length || 0) - 1) {
+            navigateToStep(currentStepIndex + 1)
+          }
+          break
+        case 'arrowleft':
+          e.preventDefault()
+          if (currentStepIndex > 0) {
+            navigateToStep(currentStepIndex - 1)
+          }
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [currentStepIndex, testCase])
 
   const loadTestCase = async () => {
     try {
@@ -117,6 +208,28 @@ export default function ExecuteTest() {
     }
     
     setExecution(newExecution)
+    setIsTimerRunning(true)
+    setStepStartTime(new Date())
+  }
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const toggleTimer = () => {
+    setIsTimerRunning(!isTimerRunning)
+  }
+
+  const resetTimer = () => {
+    setElapsedTime(0)
+    setIsTimerRunning(false)
   }
 
   const updateStepResult = (status: StepResult['status']) => {
@@ -230,10 +343,53 @@ export default function ExecuteTest() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center">
-          <Play className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading test case...</p>
+      <div className="container mx-auto py-6 space-y-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/test-runner">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/test-runner/browse">Browse Tests</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Execute Test</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-40 w-full" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-24" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-32 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -262,7 +418,24 @@ export default function ExecuteTest() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/test-runner">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/test-runner/browse">Browse Tests</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{testCase.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Header with Timer */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -284,10 +457,54 @@ export default function ExecuteTest() {
             </div>
           </div>
         </div>
-        <Button onClick={() => saveExecution(false)} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Progress'}
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Timer */}
+          <Card className="px-4 py-2">
+            <div className="flex items-center gap-3">
+              <Timer className="h-4 w-4 text-muted-foreground" />
+              <span className="font-mono text-lg">{formatTime(elapsedTime)}</span>
+              <div className="flex items-center gap-1 border-l pl-3">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={toggleTimer}
+                    >
+                      {isTimerRunning ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isTimerRunning ? 'Pause Timer' : 'Resume Timer'}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={resetTimer}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reset Timer</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </Card>
+          
+          <Button onClick={() => saveExecution(false)} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Progress'}
+          </Button>
+        </div>
       </div>
 
       {/* Progress */}
@@ -375,67 +592,119 @@ export default function ExecuteTest() {
 
               {/* Step Actions */}
               <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={() => updateStepResult('pass')}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Pass
-                </Button>
-                <Button 
-                  onClick={() => updateStepResult('fail')}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Fail
-                </Button>
-                <Button 
-                  onClick={() => updateStepResult('blocked')}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Blocked
-                </Button>
-                <Button 
-                  onClick={() => updateStepResult('skipped')}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <SkipForward className="h-4 w-4 mr-2" />
-                  Skip
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      onClick={() => updateStepResult('pass')}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Pass
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <kbd className="text-xs">P</kbd> Mark as Passed
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      onClick={() => updateStepResult('fail')}
+                      variant="destructive"
+                      className="flex-1"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Fail
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <kbd className="text-xs">F</kbd> Mark as Failed
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      onClick={() => updateStepResult('blocked')}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Blocked
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <kbd className="text-xs">B</kbd> Mark as Blocked
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      onClick={() => updateStepResult('skipped')}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <SkipForward className="h-4 w-4 mr-2" />
+                      Skip
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <kbd className="text-xs">S</kbd> Skip Step
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </CardContent>
           </Card>
 
           {/* Navigation */}
           <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => navigateToStep(currentStepIndex - 1)}
-              disabled={currentStepIndex === 0}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous Step
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => navigateToStep(currentStepIndex - 1)}
+                  disabled={currentStepIndex === 0}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Previous Step
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <kbd className="text-xs">←</kbd> Go to previous step
+              </TooltipContent>
+            </Tooltip>
             
             {currentStepIndex < testCase.steps.length - 1 ? (
-              <Button
-                onClick={() => navigateToStep(currentStepIndex + 1)}
-              >
-                Next Step
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => navigateToStep(currentStepIndex + 1)}
+                  >
+                    Next Step
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <kbd className="text-xs">→</kbd> Go to next step
+                </TooltipContent>
+              </Tooltip>
             ) : (
-              <Button
-                onClick={() => saveExecution(true)}
-                disabled={saving}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Complete Test
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => saveExecution(true)}
+                    disabled={saving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Test
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <kbd className="text-xs">⌘</kbd> + <kbd className="text-xs">Enter</kbd> Complete test
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
