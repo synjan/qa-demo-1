@@ -14,6 +14,7 @@ import { StatsWidget } from '@/components/dashboard/StatsWidget'
 import { QuickActionsWidget } from '@/components/dashboard/QuickActionsWidget'
 import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget'
 import { AddWidgetModal } from '@/components/dashboard/AddWidgetModal'
+import { TestCaseBadges } from '@/components/dashboard/TestCaseBadges'
 import { UserPreferencesManager } from '@/lib/user-preferences'
 
 const quickActions = [
@@ -285,6 +286,11 @@ export default function Dashboard() {
                 {editMode ? 'Done Editing' : 'Edit Dashboard'}
               </Button>
             </div>
+          </div>
+
+          {/* Test Case Count Badges */}
+          <div className="mb-6">
+            <TestCaseBadges />
           </div>
 
           {/* Dynamic Widgets */}
