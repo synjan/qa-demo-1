@@ -128,7 +128,7 @@ Consider the issue type (bug, feature, enhancement) when determining test covera
         // Add small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000))
       } catch (error) {
-        console.error(`Failed to generate test case for issue #${issue.number}:`, error)
+        logger.error(`Failed to generate test case for issue #${issue.number}`, error)
         // Continue with other issues even if one fails
       }
     }

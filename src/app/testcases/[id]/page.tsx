@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { TestCase } from '@/lib/types'
+import { sanitizeContent, sanitizeHTML } from '@/lib/sanitize'
 
 export default function TestCaseDetailPage() {
   const { data: session, status } = useSession()

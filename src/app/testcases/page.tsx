@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { TestTube2, Search, Filter, Plus, ExternalLink, Loader2, Play, Edit, Eye, CheckSquare, Square } from 'lucide-react'
 import { TestCase } from '@/lib/types'
+import { sanitizeContent } from '@/lib/sanitize'
 
 export default function TestCasesPage() {
   const { data: session, status } = useSession()
