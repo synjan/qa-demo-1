@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state') as 'open' | 'closed' | 'all' || 'open'
     
     if (!owner || !repo) {
-      return NextResponse.json({ error: 'Owner and repo parameters are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required parameters: owner and repo' }, { status: 400 })
     }
     
     // Get token from session or PAT header

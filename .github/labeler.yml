@@ -1,0 +1,63 @@
+# Configuration for PR labeler action
+# https://github.com/actions/labeler
+
+# Frontend changes
+frontend:
+  - src/components/**
+  - src/app/**/*.tsx
+  - src/app/**/*.css
+  - '**/*.css'
+  - '**/*.scss'
+
+# Backend/API changes
+backend:
+  - src/app/api/**
+  - src/lib/**
+  - '!src/lib/utils.ts'
+
+# Test changes
+tests:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - e2e-tests/**
+  - k6-tests/**
+  - src/test-utils/**
+
+# Documentation
+documentation:
+  - '**/*.md'
+  - docs/**
+  - LICENSE
+
+# Configuration changes
+configuration:
+  - '*.json'
+  - '*.js'
+  - '*.config.*'
+  - .github/**
+  - .env*
+
+# Dependencies
+dependencies:
+  - package.json
+  - package-lock.json
+  - yarn.lock
+
+# Type definitions
+types:
+  - src/lib/types.ts
+  - '**/*.d.ts'
+
+# Performance related
+performance:
+  - k6-tests/**
+  - '**/*performance*'
+  - '**/*perf*'
+
+# Security related
+security:
+  - src/lib/auth.ts
+  - src/app/api/auth/**
+  - '**/*security*'
+  - '**/*auth*'

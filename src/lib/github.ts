@@ -64,6 +64,31 @@ export class GitHubService {
     return repositories
   }
 
+  async getRepository(owner: string, repo: string): Promise<GitHubRepository> {
+    const { data } = await this.octokit.rest.repos.get({
+      owner,
+      repo
+    })
+
+    return {
+      id: data.id,
+      name: data.name,
+      full_name: data.full_name,
+      private: data.private,
+      owner: {
+        login: data.owner.login,
+        avatar_url: data.owner.avatar_url
+      },
+      description: data.description,
+      html_url: data.html_url,
+      updated_at: data.updated_at,
+      stargazers_count: data.stargazers_count || 0,
+      forks_count: data.forks_count || 0,
+      open_issues_count: data.open_issues_count || 0,
+      has_issues: data.has_issues
+    }
+  }
+
   async getIssues(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'open'): Promise<GitHubIssue[]> {
     // Check cache first if enabled
     if (GitHubCacheManager.isCacheEnabled()) {

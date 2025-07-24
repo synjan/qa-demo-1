@@ -1,0 +1,190 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE/**'
+      - 'LICENSE'
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Essential checks - run on every PR
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check code formatting
+      run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,json,css,md}"
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Run type checking
+      run: npx tsc --noEmit
+
+  # Test coverage - simplified
+  test-coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests with coverage
+      run: npm run test:coverage
+      env:
+        CI: true
+    
+    - name: Comment coverage on PR
+      uses: ArtiomTr/jest-coverage-report-action@v2
+      if: github.event.pull_request.head.repo.full_name == github.repository
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        threshold: 60
+        skip-step: install
+        coverage-file: ./coverage/lcov.info
+
+  # Advanced checks - only on PRs to main or with specific labels
+  advanced-checks:
+    runs-on: ubuntu-latest
+    if: |
+      github.base_ref == 'main' || 
+      contains(github.event.pull_request.labels.*.name, 'performance') ||
+      contains(github.event.pull_request.labels.*.name, 'bundle-check')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+      env:
+        GITHUB_CLIENT_ID: dummy
+        GITHUB_CLIENT_SECRET: dummy
+        NEXTAUTH_URL: http://localhost:3000
+        NEXTAUTH_SECRET: dummy
+        OPENAI_API_KEY: dummy
+    
+    # Bundle size analysis
+    - name: Check bundle size
+      uses: andresz1/size-limit-action@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        build_script: build
+        skip_step: install
+    
+    # Performance metrics (Lighthouse)
+    - name: Run Lighthouse CI
+      if: contains(github.event.pull_request.labels.*.name, 'performance')
+      run: |
+        npm install -g @lhci/cli@0.12.x
+        npm run start &
+        npx wait-on http://localhost:3000
+        lhci autorun --collect.numberOfRuns=1 --upload.target=temporary-public-storage
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+  # Auto-labeler
+  pr-labeler:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+    - uses: actions/labeler@v5
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        configuration-path: .github/labeler.yml
+        sync-labels: true
+
+  # Summary comment
+  pr-summary:
+    needs: [lint-and-format, test-coverage]
+    runs-on: ubuntu-latest
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Comment PR status
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const checks = {
+            'Formatting': '${{ needs.lint-and-format.result }}',
+            'Tests': '${{ needs.test-coverage.result }}'
+          };
+          
+          const allPassed = Object.values(checks).every(status => status === 'success');
+          const emoji = allPassed ? '✅' : '❌';
+          
+          const body = `## ${emoji} PR Check Summary\n\n` +
+            Object.entries(checks)
+              .map(([name, status]) => `- ${status === 'success' ? '✅' : '❌'} ${name}`)
+              .join('\n') +
+            '\n\n' +
+            (allPassed 
+              ? '**All checks passed!** This PR is ready for review.'
+              : '**Some checks failed.** Please fix the issues and push again.');
+          
+          // Find and update existing comment or create new one
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('PR Check Summary')
+          );
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }
