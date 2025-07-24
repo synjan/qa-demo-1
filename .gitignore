@@ -46,3 +46,24 @@ next-env.d.ts
 
 # cache
 /.cache
+
+# Logs
+logs/
+*.log
+dev.log
+
+# Test execution results
+test-executions/
+
+# Contract testing
+pacts/
+
+# IDE files
+.idea/
+.vscode/
+
+# Visual regression snapshots (if not intentionally tracked)
+e2e-tests/visual/**/*-snapshots/
+
+# OS generated files
+Thumbs.db
