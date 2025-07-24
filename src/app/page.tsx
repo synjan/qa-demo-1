@@ -5,7 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/layout/navigation'
 import { Button } from '@/components/ui/button'
-import { TestTube2, FolderOpen, GitBranch, Plus, Heart, Upload, Download, BarChart, Copy, Sparkles, Edit3, Zap, Activity, TrendingUp, Clock, Monitor, X } from 'lucide-react'
+import { TestTube2, FolderOpen, GitBranch, Plus, Heart, Upload, Download, BarChart, Copy, Sparkles, Edit3, Zap, Activity, TrendingUp, Clock, Monitor, X, Calendar } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { FavoriteTestsModal } from '@/components/modals/FavoriteTestsModal'
 import { ImportTestCasesModal } from '@/components/modals/ImportTestCasesModal'
 import { ExportResultsModal } from '@/components/modals/ExportResultsModal'
@@ -14,8 +21,8 @@ import { StatsWidget } from '@/components/dashboard/StatsWidget'
 import { QuickActionsWidget } from '@/components/dashboard/QuickActionsWidget'
 import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget'
 import { AddWidgetModal } from '@/components/dashboard/AddWidgetModal'
-import { TestCaseBadges } from '@/components/dashboard/TestCaseBadges'
 import { UserPreferencesManager } from '@/lib/user-preferences'
+import { DashboardStats as DashboardStatsType } from '@/lib/stats-types'
 
 const quickActions = [
   {
@@ -101,17 +108,6 @@ const availableWidgets = [
   { id: 'performance', label: 'Performance Metrics', icon: Monitor, description: 'System and test performance data', category: 'Analytics' }
 ]
 
-interface DashboardStats {
-  totalTestCases: number
-  totalTestPlans: number
-  totalTestRuns: number
-  passRate: number
-  recentTestRuns: number
-  recentTestCases: number
-  recentTestPlans: number
-  activeTestRuns: number
-}
-
 interface Activity {
   id: string
   type: 'test_run' | 'test_case' | 'test_plan'
@@ -127,9 +123,10 @@ export default function Dashboard() {
   const router = useRouter()
   
   // State management
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [stats, setStats] = useState<DashboardStatsType | null>(null)
   const [activity, setActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'>('week')
   
   // Widget management states
   const [enabledWidgets, setEnabledWidgets] = useState<string[]>([])
@@ -161,12 +158,19 @@ export default function Dashboard() {
     loadDashboardData()
   }, [session, status, router])
 
+  // Reload data when time range changes
+  useEffect(() => {
+    if (session || localStorage.getItem('github_pat')) {
+      loadDashboardData()
+    }
+  }, [timeRange])
+
   const loadDashboardData = async () => {
     try {
       setLoading(true)
       
       const [statsResponse, activityResponse] = await Promise.all([
-        fetch('/api/dashboard/stats'),
+        fetch(`/api/dashboard/stats?timeRange=${timeRange}`),
         fetch('/api/dashboard/activity?limit=5')
       ])
       
@@ -266,6 +270,20 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex gap-2">
+              <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+                <SelectTrigger className="w-[150px]">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="quarter">This Quarter</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
+                  <SelectItem value="all">All Time</SelectItem>
+                </SelectContent>
+              </Select>
               {getAvailableWidgets().length > 0 && (
                 <Button
                   variant="outline"
@@ -288,16 +306,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Test Case Count Badges */}
-          <div className="mb-6">
-            <TestCaseBadges />
-          </div>
 
           {/* Dynamic Widgets */}
           <div className="space-y-6">
             {isWidgetEnabled('stats') && (
               <StatsWidget
-                stats={stats}
+                timeRange={timeRange}
                 loading={loading}
                 editMode={editMode}
                 onRemove={() => handleRemoveWidget('stats')}

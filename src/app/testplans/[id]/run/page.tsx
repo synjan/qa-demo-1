@@ -316,7 +316,7 @@ export default function TestRunnerPage() {
   const progress = getCurrentProgress()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -329,17 +329,17 @@ export default function TestRunnerPage() {
                 Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Test Runner</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <h1 className="text-3xl font-bold text-foreground">Test Runner</h1>
+                <p className="mt-2 text-muted-foreground">
                   Executing: {testPlan.name}
                 </p>
               </div>
             </div>
             
             {/* Progress Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6">
+            <div className="bg-card rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
+                <span className="text-sm font-medium text-foreground">Progress</span>
                 <span className="text-sm text-muted-foreground">
                   {progress.completed} / {progress.total} steps
                 </span>

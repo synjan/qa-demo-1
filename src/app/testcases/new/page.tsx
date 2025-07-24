@@ -40,10 +40,10 @@ interface StepFormData {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-200 dark:border-yellow-800' },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:border-orange-800' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800' }
+  { value: 'low', label: 'Low', color: 'bg-priority-low/10 text-priority-low border-priority-low/30' },
+  { value: 'medium', label: 'Medium', color: 'bg-priority-medium/10 text-priority-medium border-priority-medium/30' },
+  { value: 'high', label: 'High', color: 'bg-priority-high/10 text-priority-high border-priority-high/30' },
+  { value: 'critical', label: 'Critical', color: 'bg-priority-critical/10 text-priority-critical border-priority-critical/30' }
 ]
 
 const commonTags = [
@@ -249,28 +249,37 @@ export default function NewTestCasePage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8 relative z-10">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-4">
-              <Button variant="ghost" onClick={() => router.back()}>
+              <Button 
+                variant="ghost" 
+                onClick={() => router.back()}
+                className="hover:bg-accent transition-all duration-200"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Create Test Case</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-3">
+                  <TestTube2 className="h-8 w-8 text-primary" />
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Create Test Case
+                  </h1>
+                </div>
+                <p className="mt-2 text-muted-foreground">
                   Build a comprehensive test case with detailed steps and validation criteria.
                 </p>
               </div>
@@ -278,21 +287,25 @@ export default function NewTestCasePage() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-4">
-              <p className="text-red-800 dark:text-red-200">{error}</p>
+            <div className="mb-6 bg-destructive/10 border-2 border-destructive/20 rounded-lg p-4">
+              <p className="text-destructive font-medium">{error}</p>
             </div>
           )}
 
           <div className="space-y-6">
             {/* Templates */}
-            <Card>
+            <Card className="bg-card border-2 border-border transition-all duration-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Quick Start Templates</CardTitle>
-                    <CardDescription>Choose a template to get started quickly</CardDescription>
+                    <CardTitle className="text-card-foreground">Quick Start Templates</CardTitle>
+                    <CardDescription className="text-muted-foreground">Choose a template to get started quickly</CardDescription>
                   </div>
-                  <Button variant="outline" onClick={() => setShowTemplates(!showTemplates)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowTemplates(!showTemplates)}
+                    className="bg-background hover:bg-accent border-2 border-border hover:border-primary transition-all duration-200"
+                  >
                     {showTemplates ? 'Hide' : 'Show'} Templates
                   </Button>
                 </div>
@@ -301,11 +314,14 @@ export default function NewTestCasePage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {testCaseTemplates.map((template, index) => (
-                      <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                           onClick={() => applyTemplate(template)}>
-                        <h3 className="font-medium mb-2">{template.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{template.description}</p>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div 
+                        key={index} 
+                        className="bg-card border-2 border-border rounded-lg p-4 hover:bg-accent hover:border-primary cursor-pointer transition-all duration-200"
+                        onClick={() => applyTemplate(template)}
+                      >
+                        <h3 className="font-medium mb-2 text-card-foreground">{template.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                        <div className="text-xs text-muted-foreground">
                           {template.steps.length} steps
                         </div>
                       </div>
@@ -316,67 +332,67 @@ export default function NewTestCasePage() {
             </Card>
 
             {/* Basic Information */}
-            <Card>
+            <Card className="bg-card border-2 border-border transition-all duration-200">
               <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-                <CardDescription>Provide the core details for your test case</CardDescription>
+                <CardTitle className="text-card-foreground">Basic Information</CardTitle>
+                <CardDescription className="text-muted-foreground">Provide the core details for your test case</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Title *</Label>
+                  <Label htmlFor="title" className="text-foreground font-medium">Title *</Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => handleFormChange('title', e.target.value)}
                     placeholder="Enter a clear, descriptive title for your test case"
-                    className="mt-1"
+                    className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="description">Description *</Label>
+                  <Label htmlFor="description" className="text-black dark:text-white font-medium">Description *</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleFormChange('description', e.target.value)}
                     placeholder="Describe what this test case verifies and its purpose"
-                    className="mt-1"
+                    className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                     rows={3}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="preconditions">Preconditions</Label>
+                  <Label htmlFor="preconditions" className="text-black dark:text-white font-medium">Preconditions</Label>
                   <Textarea
                     id="preconditions"
                     value={formData.preconditions}
                     onChange={(e) => handleFormChange('preconditions', e.target.value)}
                     placeholder="List any setup requirements or preconditions for this test"
-                    className="mt-1"
+                    className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                     rows={2}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="expectedResult">Expected Final Result *</Label>
+                  <Label htmlFor="expectedResult" className="text-black dark:text-white font-medium">Expected Final Result *</Label>
                   <Textarea
                     id="expectedResult"
                     value={formData.expectedResult}
                     onChange={(e) => handleFormChange('expectedResult', e.target.value)}
                     placeholder="Describe the overall expected outcome of this test case"
-                    className="mt-1"
+                    className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                     rows={2}
                   />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="priority">Priority</Label>
+                    <Label htmlFor="priority" className="text-black dark:text-white font-medium">Priority</Label>
                     <Select value={formData.priority} onValueChange={(value) => handleFormChange('priority', value)}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 bg-background border-2 border-input text-foreground hover:border-ring focus:border-ring focus:ring-2 focus:ring-ring transition-all duration-200">
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-popover border-2 border-border">
                         {priorityOptions.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             <div className="flex items-center gap-2">
@@ -390,13 +406,13 @@ export default function NewTestCasePage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="githubUrl">GitHub Issue URL (Optional)</Label>
+                    <Label htmlFor="githubUrl" className="text-black dark:text-white font-medium">GitHub Issue URL (Optional)</Label>
                     <Input
                       id="githubUrl"
                       value={formData.githubIssueUrl}
                       onChange={(e) => handleFormChange('githubIssueUrl', e.target.value)}
                       placeholder="https://github.com/owner/repo/issues/123"
-                      className="mt-1"
+                      className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -404,10 +420,10 @@ export default function NewTestCasePage() {
             </Card>
 
             {/* Tags */}
-            <Card>
+            <Card className="bg-card border-2 border-border transition-all duration-200">
               <CardHeader>
-                <CardTitle>Tags</CardTitle>
-                <CardDescription>Add tags to categorize and organize your test case</CardDescription>
+                <CardTitle className="text-card-foreground">Tags</CardTitle>
+                <CardDescription className="text-muted-foreground">Add tags to categorize and organize your test case</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -422,16 +438,20 @@ export default function NewTestCasePage() {
                           addTag(tagInput)
                         }
                       }}
-                      className="flex-1"
+                      className="flex-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                     />
-                    <Button onClick={() => addTag(tagInput)} disabled={!tagInput}>
+                    <Button 
+                      onClick={() => addTag(tagInput)} 
+                      disabled={!tagInput}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted transition-all duration-200"
+                    >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                   
                   {/* Common Tags */}
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Common tags:</p>
+                    <p className="text-sm text-muted-foreground mb-2">Common tags:</p>
                     <div className="flex flex-wrap gap-2">
                       {commonTags.map(tag => (
                         <Button
@@ -440,7 +460,7 @@ export default function NewTestCasePage() {
                           size="sm"
                           onClick={() => addTag(tag)}
                           disabled={formData.tags.includes(tag)}
-                          className="text-xs"
+                          className="text-xs bg-background hover:bg-accent border border-border hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                           {tag}
                         </Button>
@@ -451,10 +471,15 @@ export default function NewTestCasePage() {
                   {/* Selected Tags */}
                   {formData.tags.length > 0 && (
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Selected tags:</p>
+                      <p className="text-sm text-muted-foreground mb-2">Selected tags:</p>
                       <div className="flex flex-wrap gap-2">
                         {formData.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
+                          <Badge 
+                            key={tag} 
+                            variant="secondary" 
+                            className="cursor-pointer bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200" 
+                            onClick={() => removeTag(tag)}
+                          >
                             {tag} ×
                           </Badge>
                         ))}
@@ -466,14 +491,17 @@ export default function NewTestCasePage() {
             </Card>
 
             {/* Test Steps */}
-            <Card>
+            <Card className="bg-card border-2 border-border transition-all duration-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Test Steps</CardTitle>
-                    <CardDescription>Define the step-by-step actions and expected results</CardDescription>
+                    <CardTitle className="text-card-foreground">Test Steps</CardTitle>
+                    <CardDescription className="text-muted-foreground">Define the step-by-step actions and expected results</CardDescription>
                   </div>
-                  <Button onClick={addStep}>
+                  <Button 
+                    onClick={addStep}
+                    className="bg-primary hover:bg-primary/90 transition-all duration-200"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Step
                   </Button>
@@ -482,15 +510,24 @@ export default function NewTestCasePage() {
               <CardContent>
                 <div className="space-y-4">
                   {steps.map((step, index) => (
-                    <div key={index} className="border rounded-lg p-4">
+                    <div key={index} className="bg-muted/50 border-2 border-border rounded-lg p-4 hover:border-primary/50 transition-all duration-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium">Step {index + 1}</h3>
                         <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary-foreground">{index + 1}</span>
+                          </div>
+                          <h3 className="font-medium text-foreground">Step {index + 1}</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => moveStep(index, 'up')}
                             disabled={index === 0}
+                            className="hover:bg-accent disabled:opacity-50 transition-all duration-200"
                           >
                             ↑
                           </Button>
@@ -499,6 +536,7 @@ export default function NewTestCasePage() {
                             size="sm"
                             onClick={() => moveStep(index, 'down')}
                             disabled={index === steps.length - 1}
+                            className="hover:bg-accent disabled:opacity-50 transition-all duration-200"
                           >
                             ↓
                           </Button>
@@ -507,6 +545,7 @@ export default function NewTestCasePage() {
                             size="sm"
                             onClick={() => removeStep(index)}
                             disabled={steps.length === 1}
+                            className="hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-all duration-200"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -515,24 +554,26 @@ export default function NewTestCasePage() {
                       
                       <div className="space-y-3">
                         <div>
-                          <Label htmlFor={`action-${index}`}>Action *</Label>
+                          <Label htmlFor={`action-${index}`} className="text-foreground font-medium">Action *</Label>
                           <Textarea
                             id={`action-${index}`}
                             value={step.action}
                             onChange={(e) => handleStepChange(index, 'action', e.target.value)}
                             placeholder="Describe the action to be performed"
                             rows={2}
+                            className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                           />
                         </div>
                         
                         <div>
-                          <Label htmlFor={`expected-${index}`}>Expected Result *</Label>
+                          <Label htmlFor={`expected-${index}`} className="text-foreground font-medium">Expected Result *</Label>
                           <Textarea
                             id={`expected-${index}`}
                             value={step.expectedResult}
                             onChange={(e) => handleStepChange(index, 'expectedResult', e.target.value)}
                             placeholder="Describe the expected outcome"
                             rows={2}
+                            className="mt-1 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                           />
                         </div>
                       </div>
@@ -544,10 +585,18 @@ export default function NewTestCasePage() {
 
             {/* Actions */}
             <div className="flex gap-4 justify-end">
-              <Button variant="outline" onClick={() => router.back()}>
+              <Button 
+                variant="outline" 
+                onClick={() => router.back()}
+                className="bg-background hover:bg-accent border-2 border-border hover:border-primary transition-all duration-200"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none transition-all duration-200"
+              >
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

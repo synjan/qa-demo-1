@@ -1,27 +1,28 @@
 @import "tailwindcss";
+@import "./theme.css";
 
 @layer base {
   :root {
     /* Light theme - Clean and bright */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 98%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 14% 46%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
     --radius: 0.5rem;
     
     /* QA-specific colors - Light theme */
@@ -37,8 +38,8 @@
     /* Additional semantic colors */
     --success: 142 71% 45%;
     --warning: 38 92% 50%;
-    --info: 221 83% 53%;
-    --chart-1: 221 83% 53%;
+    --info: 217 91% 60%;
+    --chart-1: 217 91% 60%;
     --chart-2: 142 71% 45%;
     --chart-3: 25 95% 53%;
     --chart-4: 38 92% 50%;
@@ -46,62 +47,62 @@
   }
 
   .dark {
-    /* Dark theme - High contrast and readable */
-    --background: 222 84% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222 84% 5%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 84% 5%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 84% 5%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
+    /* Dark theme - Pure black and white for high contrast */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 100%;
     
     /* QA-specific colors - Dark theme */
-    --test-pass: 142 71% 50%;
-    --test-fail: 0 84% 65%;
-    --test-blocked: 38 92% 55%;
-    --test-skip: 215 20% 70%;
-    --priority-critical: 0 84% 65%;
-    --priority-high: 25 95% 58%;
-    --priority-medium: 48 96% 58%;
-    --priority-low: 142 71% 50%;
+    --test-pass: 142 71% 60%;
+    --test-fail: 0 84% 70%;
+    --test-blocked: 38 92% 65%;
+    --test-skip: 215 20% 80%;
+    --priority-critical: 0 84% 70%;
+    --priority-high: 25 95% 68%;
+    --priority-medium: 48 96% 68%;
+    --priority-low: 142 71% 60%;
     
     /* Additional semantic colors */
-    --success: 142 71% 50%;
-    --warning: 38 92% 55%;
-    --info: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 142 71% 50%;
-    --chart-3: 25 95% 58%;
-    --chart-4: 38 92% 55%;
-    --chart-5: 0 84% 65%;
+    --success: 142 71% 60%;
+    --warning: 38 92% 65%;
+    --info: 217 91% 70%;
+    --chart-1: 217 91% 70%;
+    --chart-2: 142 71% 60%;
+    --chart-3: 25 95% 68%;
+    --chart-4: 38 92% 65%;
+    --chart-5: 0 84% 70%;
   }
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Additional custom utility classes for QA colors */
+/* Custom utility classes for theme colors */
 @layer utilities {
+  /* Test result colors */
   .test-pass {
     color: hsl(var(--test-pass));
   }
@@ -195,5 +196,16 @@
   :root {
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-geist-mono);
+  }
+}
+
+/* Ensure dark mode works properly */
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  
+  html.dark {
+    color-scheme: dark;
   }
 }

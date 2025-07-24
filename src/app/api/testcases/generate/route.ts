@@ -11,12 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const body = await request.json()
-    
     const { issueNumbers, repository, owner } = body
-    
-    if (!issueNumbers || !repository || !owner) {
-      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
-    }
 
     // Get GitHub token
     let token: string | null = null
@@ -89,12 +84,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      message: `Generated ${generatedTestCases.length} test cases`,
-      testCases: generatedTestCases 
-    })
-  } catch (error) {
-    console.error('Error generating test cases:', error)
-    return NextResponse.json({ error: 'Failed to generate test cases' }, { status: 500 })
-  }
+        return NextResponse.json({ 
+          message: `Generated ${generatedTestCases.length} test cases`,
+          testCases: generatedTestCases 
+        })
+      } catch (error) {
+        console.error('Error generating test cases:', error)
+        return NextResponse.json({ error: 'Failed to generate test cases' }, { status: 500 })
+      }
 }

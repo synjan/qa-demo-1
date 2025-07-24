@@ -29,7 +29,7 @@ export function QuickActionsWidget({ actions, onQuickAction, editMode, onRemove 
         <Button
           variant="destructive"
           size="sm"
-          className="absolute -top-2 -right-2 z-10 h-6 w-6 p-0 rounded-full"
+          className="absolute -top-2 -right-2 z-50 h-6 w-6 p-0 rounded-full shadow-md"
           onClick={onRemove}
         >
           <X className="h-3 w-3" />

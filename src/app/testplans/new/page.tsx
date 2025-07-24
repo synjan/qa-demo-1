@@ -150,11 +150,11 @@ export default function NewTestPlanPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800'
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:border-orange-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-200 dark:border-yellow-800'
-      case 'low': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+      case 'critical': return 'bg-priority-critical/10 text-priority-critical border-priority-critical/30'
+      case 'high': return 'bg-priority-high/10 text-priority-high border-priority-high/30'
+      case 'medium': return 'bg-priority-medium/10 text-priority-medium border-priority-medium/30'
+      case 'low': return 'bg-priority-low/10 text-priority-low border-priority-low/30'
+      default: return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -162,27 +162,31 @@ export default function NewTestPlanPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-4">
-              <Button variant="ghost" onClick={() => router.back()}>
+              <Button 
+                variant="ghost" 
+                onClick={() => router.back()}
+                className="hover:bg-accent transition-all duration-200"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Create Test Plan</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <h1 className="text-3xl font-bold text-foreground">Create Test Plan</h1>
+                <p className="mt-2 text-muted-foreground">
                   Organize test cases into a comprehensive test plan for execution.
                 </p>
               </div>
@@ -190,23 +194,23 @@ export default function NewTestPlanPage() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-4">
-              <p className="text-red-800 dark:text-red-200">{error}</p>
+            <div className="mb-6 bg-destructive/10 border-2 border-destructive/20 rounded-lg p-4">
+              <p className="text-destructive font-medium">{error}</p>
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Test Plan Details */}
-            <Card>
+            <Card className="bg-card border-2 border-border">
               <CardHeader>
-                <CardTitle>Test Plan Details</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-card-foreground">Test Plan Details</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Provide basic information about your test plan
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name" className="text-foreground font-medium">Name *</Label>
                   <Input
                     id="name"
                     value={name}
@@ -217,7 +221,7 @@ export default function NewTestPlanPage() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description" className="text-foreground font-medium">Description</Label>
                   <Textarea
                     id="description"
                     value={description}
@@ -230,7 +234,7 @@ export default function NewTestPlanPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="version">Version</Label>
+                    <Label htmlFor="version" className="text-foreground font-medium">Version</Label>
                     <Input
                       id="version"
                       value={version}
@@ -241,7 +245,7 @@ export default function NewTestPlanPage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="repository">Repository (Optional)</Label>
+                    <Label htmlFor="repository" className="text-foreground font-medium">Repository (Optional)</Label>
                     <Input
                       id="repository"
                       value={repository}
@@ -260,11 +264,11 @@ export default function NewTestPlanPage() {
                     </Badge>
                   </div>
                   {selectedTestCases.size === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       No test cases selected. Choose test cases from the list on the right.
                     </p>
                   ) : (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-muted-foreground">
                       {selectedTestCases.size} test case{selectedTestCases.size === 1 ? '' : 's'} will be included in this plan.
                     </div>
                   )}
@@ -293,12 +297,12 @@ export default function NewTestPlanPage() {
             </Card>
 
             {/* Test Case Selection */}
-            <Card>
+            <Card className="bg-card border-2 border-border">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Select Test Cases</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-card-foreground">Select Test Cases</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       Choose which test cases to include in this plan
                     </CardDescription>
                   </div>
@@ -307,12 +311,12 @@ export default function NewTestPlanPage() {
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search test cases..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-background border-2 border-input text-foreground focus:border-ring focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-all duration-200"
                       />
                     </div>
                   </div>
@@ -321,6 +325,7 @@ export default function NewTestPlanPage() {
                       variant="outline"
                       size="sm"
                       onClick={handleSelectAll}
+                      className="bg-background hover:bg-accent border-2 border-border hover:border-primary transition-all duration-200"
                     >
                       {selectedTestCases.size === filteredTestCases.length ? 'Deselect All' : 'Select All'}
                     </Button>
@@ -330,12 +335,12 @@ export default function NewTestPlanPage() {
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="ml-2">Loading test cases...</span>
+                    <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                    <span className="ml-2 text-foreground">Loading test cases...</span>
                   </div>
                 ) : filteredTestCases.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <TestTube2 className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <TestTube2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                     {allTestCases.length === 0 ? (
                       <>
                         <p>No test cases found</p>
@@ -350,7 +355,7 @@ export default function NewTestPlanPage() {
                     {filteredTestCases.map(testCase => (
                       <div
                         key={testCase.id}
-                        className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        className="flex items-start space-x-3 p-3 border-2 border-border rounded-lg hover:bg-accent hover:border-primary transition-all duration-200"
                       >
                         <Checkbox
                           checked={selectedTestCases.has(testCase.id)}
@@ -361,22 +366,22 @@ export default function NewTestPlanPage() {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                            <h3 className="font-medium text-sm text-foreground truncate">
                               {testCase.title}
                             </h3>
                             <Badge className={getPriorityColor(testCase.priority)}>
                               {testCase.priority}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
                             {testCase.description}
                           </p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-xs text-muted-foreground">
                               {testCase.steps.length} steps
                             </span>
                             {testCase.githubIssue && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs bg-background border-border text-foreground">
                                 #{testCase.githubIssue.number}
                               </Badge>
                             )}
