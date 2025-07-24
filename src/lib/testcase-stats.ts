@@ -33,7 +33,7 @@ export class TestCaseStatsUtils {
 
     testCases.forEach(testCase => {
       // Count by priority - normalize various priority formats
-      const priority = this.normalizePriority(testCase.priority)
+      const priority = TestCaseStatsUtils.normalizePriority(testCase.priority)
       if (priority in stats.byPriority) {
         stats.byPriority[priority as keyof typeof stats.byPriority]++
       }
